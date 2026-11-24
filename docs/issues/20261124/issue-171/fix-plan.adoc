@@ -1,0 +1,63 @@
+= issue #171 の修正計画: 文字列リテラルの知らないエスケープを、エラーにする
+
+== 目的
+
+issue #171 は、文字列リテラルに、言語が定めていないエスケープ（`\q`）を書いても、コンパイルが通ることを報告している。バックスラッシュと次の文字が、そのまま出力される。
+
+終わりの条件は、知らないエスケープが、その位置を指すエラーになることである。
+
+== 現状
+
+`origin/master` で確かめた。`printLn("a\qb");` を持つプログラムは、`zustral compile … --target-type=c` が終了コード 0 で終わる。
+
+関係するコードとテストは次のとおりである。
+
+* `lib/Escape.ml` の `escape_list`: `\n`、`\r`、`\t`、`\'`、`\"`、`\\` と、空白のエスケープを読む。ほかの文字の前のバックスラッシュは、最後の枝（`head :: rest`）が、普通の文字として通す。
+* `lib/AbstractionPass.ml` の `abs_expr`: 文字列の定数を `escape_string` に渡す。渡す位置は、文字列を持つ宣言の位置である。文字列リテラルの位置（`CStringConstant` の span）は、捨てている。
+* `test-programs/suites/034-early-and-late-stage-errors/009-bad-whitespace-escape` と `036-bad-whitespace-escape-in-a-constant`: 空白のエスケープのエラー。位置は、関数や定数の全体である。
+
+== 変更
+
+* `lib/Escape.ml` の `escape_list`: バックスラッシュの次が、エスケープを作らない文字なら、エラーにする。
+* `lib/GenericErrors.ml`: `UnknownEscapeSequence` と、その文面を足す。文面は、書けるエスケープを挙げる。
+* `lib/AbstractionPass.ml` の `abs_expr`: `escape_string` に、文字列リテラルの位置を渡す。issue が「その位置を指すエラー」を求めているからである。空白のエスケープのエラーの位置も、文字列リテラルになる。
+
+== テスト
+
+最初に書く、失敗するテスト: `test-programs/suites/034-early-and-late-stage-errors/044-unknown-escape-in-a-string`。issue の再現のプログラムである。直す前は、コンパイルが通る。
+
+変えるテスト: `034/009` と `034/036` の期待する位置。関数や定数の全体から、文字列リテラルになる。
+
+== 確認
+
+* 計測値: 行数が変わる。`measure.sh --record` で記録し直す。
+* エラーメッセージのテスト: 新しい文面を、上のテストが固定する。
+* カバレッジ: 新しい枝を、上のテストが実行する。
+
+== 範囲外
+
+* 文字の定数（`'a'`）。字句解析が、エスケープを受けない。
+* `\x41` や `\u{…}` のような、新しいエスケープを足すこと。
+
+== セルフレビュー
+
+issue の本文に照らして見直した。
+
+* 「知らないエスケープは、その位置を指すエラーにする」: エラーにし、位置を文字列リテラルにする。エスケープの1文字の位置までは、指さない。`escape_list` は、文字列の中の位置を持っていない。
+* 呼び出し元: `escape_string` を呼ぶのは、`AbstractionPass.abs_expr` だけである。3重引用符の文字列も、同じ所を通る。
+* 見直しで足したこと: 位置を文字列リテラルにすること。最初の実装では、位置が関数の全体（1 行目から 5 行目）だった。
+
+== 実装の記録
+
+* `tools/refactoring/run-every-ci-check-locally.sh` の 14 個の検査は、すべて `ok` だった。
+* issue のプログラムは、3 行目の 16 桁から 22 桁（文字列リテラル）を指して、次のエラーになる（終了コード 255）。
++
+----
+`\q` is not an escape sequence. A string can have `\n`, `\r`, `\t`, `\'`, `\"`, `\\`, and whitespace between two backslashes.
+----
+
+== コードレビューで足したこと
+
+* バックスラッシュの次が、2 バイト以上の文字（`\é`）のとき、エラーの文面に、その文字の全体を入れる。直す前は、最初の 1 バイトだけが入り、`--error-format=json` の出力が UTF-8 でなくなった。テストは `034/045-unknown-escape-before-a-non-ascii-character`。
+* 文字列がバックスラッシュで終わるときも、同じエラーにする。3重引用符の文字列は、最後の改行を落とすので、最後の行の終わりのバックスラッシュが、文字列の最後の文字になる。直す前は、そのバックスラッシュが、そのまま出力された。テストは `034/046-backslash-at-the-end-of-a-triple-quoted-string`。
+* `lib/GenericErrors.ml` は、この変更で、コメントを除いて 200 行を超えた。ファイルを分けるのは、この PR の範囲を超えるので、直していない。

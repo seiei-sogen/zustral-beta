@@ -63,7 +63,7 @@ and abs_expr place im expr =
   | CBoolConstant (_, b) -> BoolConstant b
   | CIntConstant (_, i) -> IntConstant i
   | CFloatConstant (_, f) -> FloatConstant f
-  | CStringConstant (_, s) -> StringConstant (escape_string place s)
+  | CStringConstant (span, s) -> StringConstant (escape_string (place_inside place span) s)
   | CVariable (_, i) -> Variable (qualify_identifier im i)
   | CFuncall (_, name, args) ->
      FunctionCall (qualify_identifier im name, abs_arglist place im args)

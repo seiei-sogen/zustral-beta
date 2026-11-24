@@ -1,0 +1,1 @@
+Test that a backslash before a character that makes no escape sequence (`\q`) is an error in a string (issue #171). Before, the compiler wrote the backslash and the character into the C string as they were, and the program printed `a\qb`.
