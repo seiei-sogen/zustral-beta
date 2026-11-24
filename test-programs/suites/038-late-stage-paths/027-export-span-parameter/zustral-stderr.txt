@@ -11,11 +11,10 @@
   ],
   "span": {
     "filename": "test-programs/suites/038-late-stage-paths/027-export-span-parameter/Test.zum",
-    "startp": { "line": 4, "column": 48 },
+    "startp": { "line": 5, "column": 4 },
     "end": { "line": 7, "column": 8 }
   },
   "context": [
-    [ 2, "" ],
     [ 3, "module body Test is" ],
     [ 4, "    pragma Foreign_Export(External_Name => \"f\");" ],
     [ 5, "    function f(x: Span[Nat8, Static]): Int32 is" ],

@@ -4,12 +4,10 @@
   "text": [ { "type": "text", "content": "Instance overlaps." } ],
   "span": {
     "filename": "test-programs/suites/008-typeclasses/008-named-duplicate/Test.zum",
-    "startp": { "line": 13, "column": 8 },
+    "startp": { "line": 15, "column": 4 },
     "end": { "line": 19, "column": 8 }
   },
   "context": [
-    [ 11, "            return nil;" ],
-    [ 12, "        end;" ],
     [ 13, "    end;" ],
     [ 14, "" ],
     [ 15, "    instance Foo(Bar) is" ],

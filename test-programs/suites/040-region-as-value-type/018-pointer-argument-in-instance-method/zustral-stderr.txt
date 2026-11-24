@@ -16,12 +16,10 @@
   ],
   "span": {
     "filename": "test-programs/suites/040-region-as-value-type/018-pointer-argument-in-instance-method/Test.zum",
-    "startp": { "line": 9, "column": 8 },
+    "startp": { "line": 11, "column": 4 },
     "end": { "line": 16, "column": 8 }
   },
   "context": [
-    [ 7, "        generic [R: Region]" ],
-    [ 8, "        method area(x: T, y: Pointer[R]): Int32;" ],
     [ 9, "    end;" ],
     [ 10, "" ],
     [ 11, "    instance Shape(Int32) is" ],

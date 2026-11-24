@@ -10,7 +10,7 @@
   ],
   "span": {
     "filename": "test-programs/suites/031-declaration-errors/032-missing-return-after-while-loop/Test.zum",
-    "startp": { "line": 1, "column": 19 },
+    "startp": { "line": 2, "column": 4 },
     "end": { "line": 6, "column": 8 }
   },
   "context": [

@@ -7,11 +7,17 @@ Error:
   Module:
     Zustral.Pervasive
   Location:
-    Filename: ''
-    From: line 13, column 4
-    To: line 16, column 8
+    Filename: 'lib/builtin/Pervasive.zum'
+    From: line 12, column 4
+    To: line 15, column 8
   Description:
     The entrypoint function cannot be generic.
   Code:
-    [no span available]
-
+    10 | 
+    11 | module body Zustral.Pervasive is
+    12 |     generic [T: Type, R: Region]
+    13 |     function spanLength(sp: Span[T, R]): Index is
+    14 |         return @embed(Index, "$1.size", sp);
+    15 |     end;
+    16 | 
+    17 |     generic [T: Type, R: Region]

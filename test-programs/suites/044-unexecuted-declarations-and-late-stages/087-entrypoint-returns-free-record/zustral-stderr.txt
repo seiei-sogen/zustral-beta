@@ -12,12 +12,10 @@
   ],
   "span": {
     "filename": "test-programs/suites/044-unexecuted-declarations-and-late-stages/087-entrypoint-returns-free-record/Test.zum",
-    "startp": { "line": 4, "column": 8 },
+    "startp": { "line": 6, "column": 4 },
     "end": { "line": 8, "column": 8 }
   },
   "context": [
-    [ 2, "    record Code: Free is" ],
-    [ 3, "        x: Int32;" ],
     [ 4, "    end;" ],
     [ 5, "" ],
     [ 6, "    function main(): Code is" ],

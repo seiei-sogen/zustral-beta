@@ -8,12 +8,10 @@
   ],
   "span": {
     "filename": "test-programs/suites/031-declaration-errors/013-instance-for-non-typeclass/Test.zum",
-    "startp": { "line": 3, "column": 8 },
+    "startp": { "line": 5, "column": 4 },
     "end": { "line": 6, "column": 8 }
   },
   "context": [
-    [ 1, "module body Test is" ],
-    [ 2, "    record Foo: Free is" ],
     [ 3, "    end;" ],
     [ 4, "" ],
     [ 5, "    instance Foo(Int32) is" ],

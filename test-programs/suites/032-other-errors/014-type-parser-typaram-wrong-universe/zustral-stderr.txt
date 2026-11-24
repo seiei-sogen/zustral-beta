@@ -11,12 +11,10 @@
   ],
   "span": {
     "filename": "test-programs/suites/032-other-errors/014-type-parser-typaram-wrong-universe/Test.zum",
-    "startp": { "line": 6, "column": 8 },
+    "startp": { "line": 8, "column": 4 },
     "end": { "line": 10, "column": 8 }
   },
   "context": [
-    [ 4, "" ],
-    [ 5, "    record Box[T: Free]: Free is" ],
     [ 6, "    end;" ],
     [ 7, "" ],
     [ 8, "    function f(b: Box[Foo]): Unit is" ],

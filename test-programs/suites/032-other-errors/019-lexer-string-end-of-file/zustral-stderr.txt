@@ -4,14 +4,15 @@
   "text": [ { "type": "text", "content": "End of file in string literal." } ],
   "span": {
     "filename": "test-programs/suites/032-other-errors/019-lexer-string-end-of-file/Test.zum",
-    "startp": { "line": 3, "column": 98 },
-    "end": { "line": 3, "column": 98 }
+    "startp": { "line": 3, "column": 37 },
+    "end": { "line": 6, "column": 16 }
   },
   "context": [
     [ 1, "module body Test is" ],
     [ 2, "    function main(): ExitCode is" ],
     [ 3, "        let s: Span[Nat8, Static] := \"abc;" ],
     [ 4, "        return ExitSuccess();" ],
-    [ 5, "    end;" ]
+    [ 5, "    end;" ],
+    [ 6, "end module body." ]
   ]
 }

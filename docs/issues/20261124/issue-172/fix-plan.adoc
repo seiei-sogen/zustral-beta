@@ -1,0 +1,97 @@
+= issue #172 の修正計画: エラーの位置がずれる4つの場合を直す
+
+== 目的
+
+issue #172 は、エラーが原因と違う行や桁を指す場合が4つ残っていると報告している。
+ソースの先頭の空行、閉じていない文字列、組み込みのモジュール、本体の定義の4つである。
+
+終わりの条件は、4つのどの場合も、エラーが原因の行と桁を指すことである。
+
+== 現状
+
+`d69429b` で確かめた。
+
+. *ソースの先頭の空行*: `cli/Os.ml` の `read_stream_to_string` が、読んだソース全体に `String.trim` を掛ける。先頭に空行が3つあると、6 行目の `let` の型のエラーが「line 3, column 8」と報告される。
+. *閉じていない文字列*: `lib/Lexer.mll` の `read_string` が、文字列の中の改行で `new_line` を呼ばない。`032-other-errors/019-lexer-string-end-of-file` の `End of file in string literal.` が「line 3, column 98」になる。同じ原因で、2行にわたる文字列の後のエラーは、どれも 1 行早く報告される。
+. *組み込みのモジュール*: `lib/Compiler.ml` の `fake_mod_source` が、組み込みのモジュールを空のファイル名で読む。`concat_builtins.py` は、埋め込む文字列の先頭に改行を1つ足す。`Zustral.Pervasive` の 12 行目が、ファイル名 `''` の 13 行目として出る。`cli/CliEngine.ml` のソースの対応表に入っていないので、ソースの引用も出ない。`test-programs/cli/052-entrypoint-in-the-built-in-module` が固定している。
+. *本体の定義*: `lib/Parser.mly` の `function_def` と `instance_def` が、空になりうる `generic_segment` で始まり、`$loc` で位置を取る。空の記号の位置は、前のトークンの末尾である。2 行目の関数の位置が、1 行目の 19 桁（`is` の後）から始まる。インターフェースの `function_decl` と `instance_decl` も同じ形である。
+
+== 変更
+
+* `cli/Os.ml`: `read_stream_to_string` は、読んだものをそのまま返す。`String.trim` は、`run_command` の stdout と stderr にだけ掛ける。C コンパイラの出力を、いままでどおり整えるためである。
+* `lib/Lexer.mll`: `read_string` で、改行に `new_line` を呼ぶ。`read_triple_string` と同じ形である。
+* `lib/BuiltInModuleSources.ml`（新しいファイル）: `built_in_module_sources`。組み込みのモジュールのソースを、コンパイルする順に並べる。ファイル名は、コンパイラのリポジトリでのソースのパス（`lib/builtin/Pervasive.zum` など）である。
+* `lib/Compiler.ml`: `empty_compiler` は、`built_in_module_sources` をコンパイルする。`fake_mod_source` を消す。
+* `cli/CliEngine.ml`: ソースの対応表に、`built_in_module_sources` も入れる。コマンドラインのファイルを先に入れるので、同じ名前なら、コマンドラインのファイルが勝つ。`try_adding_source_ctx` の、位置のファイルが対応表にない場合の枝を、位置がない場合の枝にまとめる。どちらも、引用を付けずにエラーを返す。
+* `concat_builtins.py`: モジュールのソースを、`{code|` と `|code}` の間に、前後に何も足さずに埋め込む。文字列の 1 行目が、ファイルの 1 行目になる。`prelude_c` は変えない。生成する C が変わらないようにするためである。
+* `lib/Parser.mly`: `function_decl`、`instance_decl`、`function_def`、`instance_def` の位置を、`$loc` から `$sloc` に変える。`$sloc` は、先頭の空の記号を飛ばす。
+* `lib/SourceContext.ml`: ソースの引用を切り出すとき、最後の改行の後の空の文字列を、行に数えない。ソースを整えなくなったので、ファイルの末尾の近くのエラーに、ファイルにない空の行が出るようになったからである。
+
+== テスト
+
+最初に書く、失敗するテスト。直す前は、どれも失敗する。
+
+* `test-programs/suites/032-other-errors/032-error-after-blank-lines-at-the-start-of-the-file-points-at-its-line`（新しいテスト）: issue の再現。エラーは 6 行目を指す。
+* `test-programs/suites/032-other-errors/033-error-after-a-string-literal-of-two-lines-points-at-its-line`（新しいテスト）: 2行にわたる文字列の後のエラーは、5 行目を指す。
+* `032-other-errors/019-lexer-string-end-of-file`: 期待する位置を、ファイルの末尾（7 行目の 0 桁）に書き換える。
+* `test-programs/cli/052-entrypoint-in-the-built-in-module`: ファイル名 `lib/builtin/Pervasive.zum`、12 行目、ソースの引用を期待する。
+* `031-declaration-errors/081-record-of-the-interface-defined-again-as-a-function`: 関数の位置が、2 行目の 4 桁（`function`）から始まることを期待する。
+* `test/OsTest.ml` の `test_read_file_of_a_million_lines`: 最後の改行も読むので、長さは `2 * line_count` になる。
+
+== 確認
+
+* 既にあるテストの期待する出力が、エラーのテストで 308 個、コマンドラインのテストで 3 個変わる。エラーのテストは、`runner.py --replace-stderr` で書き換えたあと、`HEAD` と比べて、変わった中身を種類に分けるスクリプトで、すべてを確かめた。どのファイルでも、新しい引用は、新しい位置の前後 2 行の、ファイルの行そのものだった。
+** 144 個: 先頭に空行のある `012-numbers` のテスト。位置と引用が、空行の数だけ下に動く（場合 1）。
+** 162 個と、コマンドラインの `042` と `043`: 定義の位置の始まりが、前のトークンの末尾から、空白とコメントだけを飛ばして、`generic`、`function`、`instance` に動く（場合 4）。終わりは変わらない。
+** 2 個: `019` と `020`。ファイルの終わりで起きる字句のエラーの位置が、整えないファイルの末尾になる（場合 2）。
+** コマンドラインの `052`: 組み込みのモジュールの位置（場合 3）。
+* 計測値: `lib/` にファイルが1つ増え、行が 26 増える。`measure.sh --record` で記録し直す。
+* エラーメッセージのテスト: 文面は変えない。
+* カバレッジ: `SourceContext` の2つの枝は、最後に改行のあるファイルと、ないファイル（`033-type-checker-errors/029` など）が実行する。`try_adding_source_ctx` の `None` の枝は、位置のないエラー（`032-other-errors/002-entrypoint-no-such-function` など）が実行する。
+
+== 範囲外
+
+* 閉じていない文字列のエラーを、開いた引用符の位置に置くこと。いまは、三重の引用符の文字列と同じく、ファイルの末尾を指す。開いた位置から末尾までの範囲にするほうが、原因が見つけやすい。別の判断である。
+* 最後の行が、改行で終わらないコメントのファイル。ファイルの終わりで起きるエラーが、1 行下の 0 桁を指す。`lib/Lexer.mll` の `comment` の規則が、改行がなくても `new_line` を呼ぶからである。作業の中で見つけた。別の issue にする。
+* `docs/llm/plan-fix-all-open-bug-issues-20261117.md` の記述。作業の記録なので、書き換えない。
+
+== セルフレビュー
+
+issue の本文に照らして見直した。
+
+* 「どの場合も、原因の行と桁を指す」: 4つの再現で確かめた。結果は「実装の記録」にある。
+* 呼び出し元: `read_stream_to_string` を呼ぶのは、`read_file_to_string` と `run_command` である。`read_file_to_string` を呼ぶのは、`CliEngine.make_module_source` と `run_command` の stderr である。`run_command` の2つの出力は、いままでどおり整える。
+* `fake_mod_source` を呼んでいたのは、`empty_compiler` だけである。`test/UnexecutedCheckerTest.ml` は、組み込みのモジュールを自分で空のファイル名で読む。位置を見ないテストなので、変えない。
+* issue が決めていないことを、次のように決めた。
+** 組み込みのモジュールのファイル名は、コンパイラのリポジトリでのパスにする。利用者の手元にそのファイルはないが、ソースの引用が出るので、開かなくてよい。パスは、ソースを探す手がかりになる。
+** 原因が同じなので、インターフェースの関数とインスタンスの宣言も直す。issue は本体の定義だけを挙げている。
+** 原因が同じなので、2行にわたる文字列の後の位置も直す。issue は閉じていない文字列だけを挙げている。
+** 最後の改行の後の空の文字列を、引用の行に数えない。ファイルの末尾で起きるエラー（`019`、`020`）は、7 行目を指し、引用は 6 行目まで出る。
+
+== 実装の記録
+
+* 計画どおりに実装した。ただし、`lib/SourceContext.ml` の変更は、期待する出力を書き換えた後で足した。整えないソースを `\n` で切ると、最後の改行の後に空の行ができる。ファイルの末尾の近くのエラー 28 個の引用に、ファイルにない行が出ていた。これを直して、変わる期待する出力が 310 個から 308 個に減った。
+* `try_adding_source_ctx` の変更も、計画の後で足した。1回目の 14 個の検査で、カバレッジの検査（`every-line-is-executed`）が、位置のファイルが対応表にない場合の枝を、実行されない行として挙げた。その場合を作っていたのは、空のファイル名の組み込みのモジュールだけだった。いまは、どのエラーの位置のファイルも対応表にある。`parse_expr` も空のファイル名で読むが、コンパイラの中に呼ぶところはない。テストでは実行できないので、記録に理由を書く前に、同じ結果を返す位置のない場合の枝にまとめた。
+* 4つの場合の、直した後の出力（`zustral compile …`、プレーンテキスト）。
+** 先頭に空行が3つあるファイル: `From: line 6, column 8`（前は `line 3, column 8`）。
+** 閉じていない文字列（`019`）: `From: line 7, column 0`（前は `line 3, column 98`）。2行にわたる文字列の後のエラーは、`line 5, column 8`（前は `line 4, column 8`）。
+** 組み込みのモジュール（`052`）: `Filename: 'lib/builtin/Pervasive.zum'`、`From: line 12, column 4`、ソースの 10 行目から 17 行目の引用（前は `''`、`line 13, column 4`、引用なし）。
+** 本体の定義（`081`）: `From: line 2, column 4`（前は `line 1, column 19`）。
+* `tools/refactoring/run-every-ci-check-locally.sh` の 14 個の検査は、2回目で、すべて `ok` だった。
+
+== コードレビューで直したこと
+
+コードレビューが、上の実装の穴を2つ見つけた。直して、計画の次の3点が変わった。上の節の記述のうち、この3点に当たるものは、ここの記述が正しい。
+
+* *閉じていない文字列のエラーは、開いた引用符から、ファイルの終わりまでを指す。* 上の実装では、ファイルの終わり（7 行目の 0 桁）だけを指した。46 行のファイルの 3 行目で文字列を閉じ忘れると、47 行目を指し、引用は最後の2行になった。原因のある行が、分からない。`read_string` と `read_triple_string` に、開いた引用符の位置を渡すようにした。`019` と `020` は、3 行目の 37 桁から、6 行目の 16 桁までになる。「範囲外」に挙げていた案を、採った形である。
+* *ソースの終わりの空白は、落とす。先頭の空白だけを、残す。* 上の実装では、何も落とさなかった。空行で終わるファイルの、ファイルの終わりのエラーが、空行だけを引用した。フォームフィードや、改行のない復帰文字で終わるファイルが、コンパイルできなくなった。`cli/Os.ml` に `without_whitespace_at_the_end` を足し、`read_file_to_string` が、終わりの空白だけを落とすようにした。終わりを落としても、それより前の位置は変わらない。
+* *`lib/SourceContext.ml` と `test/OsTest.ml` は、変えない。* ソースが改行で終わらなくなったので、最後の改行の後の空の行を除く必要が、なくなった。100 万行のファイルの長さも、元の `2 * line_count - 1` に戻る。
+
+直した後も、`tools/refactoring/run-every-ci-check-locally.sh` の 14 個の検査は、すべて `ok` だった。空行5つで終わるファイルの構文エラーは、4 行目（`end;`）を指す。実行して確かめた。
+
+直さなかった指摘は、次のとおりである。
+
+* 先頭がフォームフィードのファイルは、コンパイルできない。直す前は、`String.trim` が落としていた。字句解析が受ける空白は、空白とタブだけである。
+* 組み込みのモジュールの名前（`lib/builtin/Pervasive.zum`）と同じパスのファイルを利用者が渡すと、組み込みのモジュールの中のエラーが、利用者のファイルの行を引用する。
+* `test-programs/make.py`（`012-numbers` のテストを生成するスクリプト）の雛形が、古い位置と古い書式のままである。前から、いまの期待する出力と合っていない。
+* ファイルが改行のないコメントで終わると、ファイルの終わりのエラーの行が1つ大きくなる。前からある不具合で、issue #199 にした。

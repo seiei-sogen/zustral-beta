@@ -1,0 +1,22 @@
+{
+  "module": "Test",
+  "kind": "Type Error",
+  "text": [
+    { "type": "text", "content": "Cannot cast to " },
+    { "type": "type", "content": "Int32" },
+    { "type": "text", "content": " from " },
+    { "type": "type", "content": "Bool" }
+  ],
+  "span": {
+    "filename": "test-programs/suites/032-other-errors/033-error-after-a-string-literal-of-two-lines-points-at-its-line/Test.zum",
+    "startp": { "line": 5, "column": 8 },
+    "end": { "line": 5, "column": 29 }
+  },
+  "context": [
+    [ 3, "        let s: Span[Nat8, Static] := \"two" ],
+    [ 4, "lines\";" ],
+    [ 5, "        let x: Int32 := true;" ],
+    [ 6, "        return ExitSuccess();" ],
+    [ 7, "    end;" ]
+  ]
+}

@@ -33,12 +33,23 @@ let read_stream_to_string (stream: in_channel): string =
     end
   in
   read_chunks ();
-  String.trim (Buffer.contents contents)
+  Buffer.contents contents
+
+(* The text without the whitespace at its end. The whitespace at the start
+   stays: removing the blank lines at the start of a source file would move
+   every position after them (issue #172). Without the blank lines at its end,
+   an error at the end of the file points at the last line that has text. *)
+let without_whitespace_at_the_end (text: string): string =
+  let is_whitespace (character: char): bool = String.contains " \012\n\r\t" character in
+  let rec length_without_whitespace_at_the_end (length: int): int =
+    if length > 0 && is_whitespace text.[length - 1] then length_without_whitespace_at_the_end (length - 1) else length
+  in
+  String.sub text 0 (length_without_whitespace_at_the_end (String.length text))
 
 let read_file_to_string (path: string): string =
   try
     let stream = open_in path in
-    Fun.protect ~finally:(fun () -> close_in_noerr stream) (fun () -> read_stream_to_string stream)
+    Fun.protect ~finally:(fun () -> close_in_noerr stream) (fun () -> without_whitespace_at_the_end (read_stream_to_string stream))
   with Sys_error reason ->
     cli_error NoSpan (ReadError { path; reason = reason_without_path path reason })
 
@@ -74,13 +85,13 @@ let run_command (command: string): command_output =
          file too. *)
       let command_with_stderr_in_file: string = "exec 2> " ^ Filename.quote stderr_path ^ "\n" ^ command in
       let (stdout_chan, stdin_chan, stderr_chan) = open_process_full command_with_stderr_in_file [|"PATH=" ^ path|] in
-      let stdout = read_stream_to_string stdout_chan in
+      let stdout = String.trim (read_stream_to_string stdout_chan) in
       let proc_stat = close_process_full (stdout_chan, stdin_chan, stderr_chan) in
       CommandOutput {
           command = command;
           code = ProcessStatus.exit_code proc_stat;
           stdout = stdout;
-          stderr = read_file_to_string stderr_path
+          stderr = String.trim (read_file_to_string stderr_path)
         })
 
 let compile_c_code (source_path: string) (output_path: string): command_output =

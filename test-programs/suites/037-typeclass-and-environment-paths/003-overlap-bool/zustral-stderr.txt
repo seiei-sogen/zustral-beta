@@ -4,12 +4,10 @@
   "text": [ { "type": "text", "content": "Instance overlaps." } ],
   "span": {
     "filename": "test-programs/suites/037-typeclass-and-environment-paths/003-overlap-bool/Test.zum",
-    "startp": { "line": 10, "column": 8 },
+    "startp": { "line": 12, "column": 4 },
     "end": { "line": 16, "column": 8 }
   },
   "context": [
-    [ 8, "            return nil;" ],
-    [ 9, "        end;" ],
     [ 10, "    end;" ],
     [ 11, "" ],
     [ 12, "    instance Tagged(Bool) is" ],

@@ -9,7 +9,7 @@
   ],
   "span": {
     "filename": "test-programs/suites/044-unexecuted-declarations-and-late-stages/067-function-declared-constant-defined/Test.zui",
-    "startp": { "line": 1, "column": 14 },
+    "startp": { "line": 2, "column": 4 },
     "end": { "line": 2, "column": 24 }
   },
   "context": [

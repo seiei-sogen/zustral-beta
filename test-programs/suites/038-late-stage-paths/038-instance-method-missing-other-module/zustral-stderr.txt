@@ -15,11 +15,10 @@
   ],
   "span": {
     "filename": "test-programs/suites/038-late-stage-paths/038-instance-method-missing-other-module/Lib.zum",
-    "startp": { "line": 5, "column": 8 },
+    "startp": { "line": 6, "column": 4 },
     "end": { "line": 10, "column": 8 }
   },
   "context": [
-    [ 3, "        method foo(value: T): Int32;" ],
     [ 4, "        method bar(value: T): Int32;" ],
     [ 5, "    end;" ],
     [ 6, "    instance Foo(Int32) is" ],

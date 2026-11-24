@@ -16,12 +16,10 @@
   ],
   "span": {
     "filename": "test-programs/suites/040-region-as-value-type/024-reference-pointee-in-instance-method/Test.zum",
-    "startp": { "line": 5, "column": 8 },
+    "startp": { "line": 7, "column": 4 },
     "end": { "line": 12, "column": 8 }
   },
   "context": [
-    [ 3, "        generic [R: Region]" ],
-    [ 4, "        method area(x: T, y: &[R, R]): Int32;" ],
     [ 5, "    end;" ],
     [ 6, "" ],
     [ 7, "    instance Shape(Int32) is" ],

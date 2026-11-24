@@ -11,7 +11,7 @@
   ],
   "span": {
     "filename": "test-programs/suites/032-other-errors/005-entrypoint-not-public/Test.zum",
-    "startp": { "line": 1, "column": 19 },
+    "startp": { "line": 2, "column": 4 },
     "end": { "line": 4, "column": 8 }
   },
   "context": [

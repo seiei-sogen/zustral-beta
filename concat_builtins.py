@@ -18,22 +18,16 @@ memory_int: str = read_file_to_string("lib/builtin/Memory.zui")
 memory_body: str = read_file_to_string("lib/builtin/Memory.zum")
 prelude_c: str = read_file_to_string("lib/prelude.c")
 
+# The string of a module source is exactly its file, so that an error in a
+# built-in module gives the line of the file (issue #172).
 contents: str = f"""
-let pervasive_interface_source: string = {{code|
-{pervasive_int}
-|code}}
+let pervasive_interface_source: string = {{code|{pervasive_int}|code}}
 
-let pervasive_body_source: string = {{code|
-{pervasive_body}
-|code}}
+let pervasive_body_source: string = {{code|{pervasive_body}|code}}
 
-let memory_interface_source: string = {{code|
-{memory_int}
-|code}}
+let memory_interface_source: string = {{code|{memory_int}|code}}
 
-let memory_body_source: string = {{code|
-{memory_body}
-|code}}
+let memory_body_source: string = {{code|{memory_body}|code}}
 
 let prelude_c: string = {{code|
 {prelude_c}

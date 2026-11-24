@@ -11,7 +11,7 @@
   ],
   "span": {
     "filename": "test-programs/suites/031-declaration-errors/068-foreign-export-pragma-on-an-interface-function/Test.zui",
-    "startp": { "line": 2, "column": 55 },
+    "startp": { "line": 3, "column": 4 },
     "end": { "line": 3, "column": 24 }
   },
   "context": [

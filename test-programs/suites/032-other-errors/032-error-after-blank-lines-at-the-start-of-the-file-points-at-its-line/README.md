@@ -1,0 +1,1 @@
+Shows that an error in a file that starts with blank lines points at the line it is on (issue #172). The `let` with the type error is on line 6. Before, the compiler trimmed the whitespace off the start and the end of every source file when it read it (cli/Os.ml), so the error was reported on line 3, as if the three blank lines were not there.

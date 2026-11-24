@@ -17,12 +17,10 @@
   ],
   "span": {
     "filename": "test-programs/suites/043-unexecuted-type-checker/013-instance-argument-not-type-variable-pointer/Test.zum",
-    "startp": { "line": 15, "column": 8 },
+    "startp": { "line": 17, "column": 4 },
     "end": { "line": 18, "column": 8 }
   },
   "context": [
-    [ 13, "" ],
-    [ 14, "    typeclass Kind(T: Type) is" ],
     [ 15, "    end;" ],
     [ 16, "" ],
     [ 17, "    instance Kind(Box[Pointer[Int32]]) is" ],

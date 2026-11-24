@@ -11,11 +11,10 @@
   ],
   "span": {
     "filename": "test-programs/suites/030-type-errors/068-address-wrong-number-of-type-arguments/Test.zum",
-    "startp": { "line": 5, "column": 19 },
+    "startp": { "line": 6, "column": 4 },
     "end": { "line": 8, "column": 8 }
   },
   "context": [
-    [ 3, "import Zustral.Memory (Address);" ],
     [ 4, "" ],
     [ 5, "module body Test is" ],
     [ 6, "    function f(a: Address[Int32, Int32]): Unit is" ],

@@ -13,12 +13,10 @@
   ],
   "span": {
     "filename": "test-programs/suites/042-unexecuted-types/081-type-named-by-constant/Test.zum",
-    "startp": { "line": 13, "column": 27 },
+    "startp": { "line": 15, "column": 4 },
     "end": { "line": 17, "column": 8 }
   },
   "context": [
-    [ 11, "        x: Int32;" ],
-    [ 12, "    end;" ],
     [ 13, "    constant c: Int32 := 1;" ],
     [ 14, "" ],
     [ 15, "    function f(x: c): Unit is" ],

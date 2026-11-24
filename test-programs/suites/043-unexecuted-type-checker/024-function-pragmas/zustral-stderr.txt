@@ -9,11 +9,10 @@
   ],
   "span": {
     "filename": "test-programs/suites/043-unexecuted-type-checker/024-function-pragmas/Test.zum",
-    "startp": { "line": 13, "column": 25 },
+    "startp": { "line": 14, "column": 4 },
     "end": { "line": 16, "column": 8 }
   },
   "context": [
-    [ 11, "    end;" ],
     [ 12, "" ],
     [ 13, "    pragma Unsafe_Module;" ],
     [ 14, "    function marked(x: Int32): Int32 is" ],

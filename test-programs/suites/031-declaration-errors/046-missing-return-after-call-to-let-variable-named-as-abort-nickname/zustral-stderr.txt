@@ -10,12 +10,10 @@
   ],
   "span": {
     "filename": "test-programs/suites/031-declaration-errors/046-missing-return-after-call-to-let-variable-named-as-abort-nickname/Test.zum",
-    "startp": { "line": 6, "column": 8 },
+    "startp": { "line": 8, "column": 4 },
     "end": { "line": 14, "column": 8 }
   },
   "context": [
-    [ 4, "    function quiet(x: Int32): Unit is" ],
-    [ 5, "        return nil;" ],
     [ 6, "    end;" ],
     [ 7, "" ],
     [ 8, "    function f(c: Bool): Int32 is" ],

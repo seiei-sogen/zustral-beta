@@ -10,11 +10,10 @@
   ],
   "span": {
     "filename": "test-programs/suites/031-declaration-errors/069-foreign-import-function-with-a-body/Test.zum",
-    "startp": { "line": 4, "column": 50 },
+    "startp": { "line": 5, "column": 4 },
     "end": { "line": 8, "column": 8 }
   },
   "context": [
-    [ 2, "" ],
     [ 3, "module body Test is" ],
     [ 4, "    pragma Foreign_Import(External_Name => \"abs\");" ],
     [ 5, "    function myAbs(x: Int32): Int32 is" ],

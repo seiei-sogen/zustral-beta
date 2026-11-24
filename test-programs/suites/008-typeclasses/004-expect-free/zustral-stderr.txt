@@ -12,12 +12,10 @@
   ],
   "span": {
     "filename": "test-programs/suites/008-typeclasses/004-expect-free/Test.zum",
-    "startp": { "line": 7, "column": 8 },
+    "startp": { "line": 9, "column": 4 },
     "end": { "line": 14, "column": 8 }
   },
   "context": [
-    [ 5, "" ],
-    [ 6, "    record Foo: Linear is" ],
     [ 7, "    end;" ],
     [ 8, "" ],
     [ 9, "    instance AcceptsFree(Foo) is" ],

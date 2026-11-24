@@ -109,9 +109,6 @@ let rec compile_multiple (c: compiler) (modules: module_source list): compiler O
   | [] ->
      Ok c
 
-let fake_mod_source (is: string) (bs: string): module_source =
-  TwoFileModuleSource { int_filename = ""; int_code = is; body_filename = ""; body_code = bs }
-
 let finish: Pipeline.finish = fun (env: env) (units: c_unit list) (entrypoint: entrypoint option) ->
   (* The wrapper functions. *)
   let* (env, decls, exported) = monomorphize_wrappers env in
@@ -135,11 +132,7 @@ let finish: Pipeline.finish = fun (env: env) (units: c_unit list) (entrypoint: e
   Ok (CProgram { prelude = CSource prelude_c; units = units @ [wrapper_unit; wrappers]; entrypoint })
 
 let empty_compiler (): compiler Outcome.t =
-  (* We have to compile the Zustral.Pervasive module, followed by
-     Zustral.Memory, since the latter uses declarations from the former. *)
-  let c = Compiler (empty_env, []) in
-  let* (c: compiler) = compile_mod c (fake_mod_source pervasive_interface_source pervasive_body_source) in
-  compile_mod c (fake_mod_source memory_interface_source memory_body_source)
+  compile_multiple (Compiler (empty_env, [])) BuiltInModuleSources.built_in_module_sources
 
 (* The built-in modules, then the given ones, in order. *)
 let compile_modules (sources: module_source list): compiler Outcome.t =

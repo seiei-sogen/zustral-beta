@@ -1,5 +1,5 @@
 {
-  "base_commit": "ad70dac8c57d1e2f24032f17ede18b695eb1b92b",
+  "base_commit": "aa0783e3fde52c3e1df550b621666f17590415fd",
   "issues": [
     {
       "number": 33,
@@ -88,8 +88,8 @@
       "title": "エラーの位置がずれる場合が、4つ残っている（先頭の空行、閉じていない文字列、組み込みのモジュール、本体の定義）",
       "summary": "エラーの位置がずれる場合が、4つ残っている。",
       "depends_on": [],
-      "status": "queued",
-      "reason": "README の「次にやること」の3番。残っている不具合。"
+      "status": "done",
+      "reason": "PR を立てた。計画は issue-172/fix-plan.adoc。"
     },
     {
       "number": 178,
@@ -512,21 +512,28 @@
     }
   ],
   "next_issue": {
-    "number": 177,
-    "current_behavior": "`main` に変数を N 個置くプログラム（#143 の形）のコンパイルの全体が、直す前のコンパイラで、800 個で 0.91 秒、1600 個で 5.04 秒かかる（1回ずつの計測。サブエージェントの計測では、5 回の中央値で 0.889 秒と 4.890 秒）。callgrind では、800 個のとき、命令数の 70.5% が線形性の検査で、ほとんどが LinearityCheck.get_entry である。",
+    "number": 172,
+    "current_behavior": "4つの場合を、直す前のコンパイラ（d69429bd）で実行して確かめた。(1) 先頭に空行が3つあるファイルの 6 行目のエラーが、3 行目と出る。(2) 閉じていない文字列のエラーが「3 行目、98 桁」と出る（032-other-errors/019）。(3) 組み込みのモジュールの中の位置が、ファイル名が空で、行が1つ大きい（cli/052）。(4) 本体の関数の定義の位置が、前のトークンの末尾（1 行目、19 桁）から始まる（031/081）。",
     "related_code": [
-      "lib/LinearityCheck.ml: check_expr, check_var_in_expr, count, get_entry, 状態の表（リスト）"
+      "cli/Os.ml: read_stream_to_string",
+      "lib/Lexer.mll: read_string",
+      "concat_builtins.py と lib/Compiler.ml（組み込みのモジュールのソース）",
+      "lib/Parser.mly: function_def, instance_def",
+      "cli/CliEngine.ml: try_adding_source_ctx"
     ],
     "related_tests": [
-      "test-programs/suites/006-linearity（エラーが名指す変数の順）"
+      "test-programs/suites/032-other-errors/019 と 020",
+      "test-programs/cli/052-entrypoint-in-the-built-in-module",
+      "test-programs/suites/031-declaration-errors/081",
+      "test-programs/suites/012-numbers（先頭が空行の 144 件）"
     ],
     "affected_ci_checks": [
+      "期待する出力の位置が変わるテストが 300 件あまりある",
       "tools/refactoring/measure.sh の記録",
-      "tools/refactoring/coverage.sh（使わない枝を残せない）",
-      "base ブランチとの等価性（生成する C が変わらないこと）"
+      "tools/refactoring/coverage.sh"
     ],
     "risks": [
-      "エラーが名指す変数の順が変わると、文面が変わる。表の行の順を、直す前のリストの順と同じに保つ。"
+      "期待する出力を、まとめて書き換える。書き換えた 308 件のすべてを、スクリプトで、意図した種類の変化かどうか仕分けた。"
     ]
   }
 }

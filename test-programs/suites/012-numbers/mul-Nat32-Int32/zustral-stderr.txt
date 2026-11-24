@@ -13,14 +13,14 @@
   ],
   "span": {
     "filename": "test-programs/suites/012-numbers/mul-Nat32-Int32/Test.zum",
-    "startp": { "line": 5, "column": 8 },
-    "end": { "line": 5, "column": 33 }
+    "startp": { "line": 6, "column": 8 },
+    "end": { "line": 6, "column": 33 }
   },
   "context": [
-    [ 3, "        let a: Nat32    := 10;" ],
-    [ 4, "        let b: Int32    := 20;" ],
-    [ 5, "        let c: Nat32    := a * b;" ],
-    [ 6, "        return ExitSuccess();" ],
-    [ 7, "    end;" ]
+    [ 4, "        let a: Nat32    := 10;" ],
+    [ 5, "        let b: Int32    := 20;" ],
+    [ 6, "        let c: Nat32    := a * b;" ],
+    [ 7, "        return ExitSuccess();" ],
+    [ 8, "    end;" ]
   ]
 }
