@@ -1,0 +1,20 @@
+module body Test is
+    record Pair[A: Free, B: Free]: Free is
+        first: A;
+        second: B;
+    end;
+
+    generic [T: Free]
+    function grow(x: T, n: Int32): Int32 is
+        if n = 0 then
+            return 0;
+        end if;
+        let pair: Pair[T, T] := Pair(first => x, second => x);
+        return grow(pair, n - 1);
+    end;
+
+    function main(): ExitCode is
+        printLn(grow(1, 3));
+        return ExitSuccess();
+    end;
+end module body.

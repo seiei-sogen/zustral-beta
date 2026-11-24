@@ -1,0 +1,15 @@
+module body Test is
+    generic [A: Free, B: Free]
+    function grow(a: A, b: B, n: Int32): Int32 is
+        if n = 0 then
+            return 0;
+        end if;
+        let wrapped: Option[A] := Some(value => a);
+        return grow(b, wrapped, n - 1);
+    end;
+
+    function main(): ExitCode is
+        printLn(grow(1, 2, 3));
+        return ExitSuccess();
+    end;
+end module body.

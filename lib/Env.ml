@@ -611,6 +611,18 @@ let get_uninstantiated_monomorphs (env: env): monomorph list =
   in
   List.filter pred (List.map snd (MonomorphsById.bindings monos.monomorphs))
 
+let get_id_of_last_registered_monomorph (env: env): mono_id option =
+  let (Env { monos; _ }) = env in
+  Option.map fst (MonomorphsById.max_binding_opt monos.monomorphs)
+
+let get_monomorphs_registered_after (env: env) (last: mono_id option): monomorph list =
+  let (Env { monos; _ }) = env in
+  let registered_after (id: mono_id): monomorph MonomorphsById.t =
+    let (_, _, after) = MonomorphsById.split id monos.monomorphs in
+    after
+  in
+  List.map snd (MonomorphsById.bindings (Option.fold ~none:monos.monomorphs ~some:registered_after last))
+
 (* Give a monomorph its definition. `define` returns the defined monomorph, or
    None when the monomorph with the ID is of another kind than the definition:
    only an ID of another lineage of environments finds one. *)

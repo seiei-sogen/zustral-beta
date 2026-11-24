@@ -1,0 +1,1 @@
+Test that a method of a generic instance that calls itself with `Box[Box[U]]` for the instance's `Box[U]` is an error that names the method (issue #176). Each call needs a copy of the method for a larger type, so the copies never end. Before, the compiler did not finish.

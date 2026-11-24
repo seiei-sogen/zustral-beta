@@ -1,0 +1,36 @@
+module body Test is
+    record Box[T: Free]: Free is
+        value: T;
+    end;
+
+    typeclass Depth(T: Free) is
+        method depth(x: T): Int32;
+    end;
+
+    instance Depth(Int32) is
+        method depth(x: Int32): Int32 is
+            return 0;
+        end;
+    end;
+
+    generic [U: Free(Depth)]
+    instance Depth(Box[U]) is
+        method depth(x: Box[U]): Int32 is
+            return 1 + depth(x.value);
+        end;
+    end;
+
+    function main(): ExitCode is
+        let box1: Box[Int32] := Box(value => 1);
+        let box2: Box[Box[Int32]] := Box(value => box1);
+        let box3: Box[Box[Box[Int32]]] := Box(value => box2);
+        let box4: Box[Box[Box[Box[Int32]]]] := Box(value => box3);
+        let box5: Box[Box[Box[Box[Box[Int32]]]]] := Box(value => box4);
+        let box6: Box[Box[Box[Box[Box[Box[Int32]]]]]] := Box(value => box5);
+        let box7: Box[Box[Box[Box[Box[Box[Box[Int32]]]]]]] := Box(value => box6);
+        let box8: Box[Box[Box[Box[Box[Box[Box[Box[Int32]]]]]]]] := Box(value => box7);
+        let box9: Box[Box[Box[Box[Box[Box[Box[Box[Box[Int32]]]]]]]]] := Box(value => box8);
+        printLn(depth(box9));
+        return ExitSuccess();
+    end;
+end module body.

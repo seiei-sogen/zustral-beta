@@ -1,0 +1,1 @@
+Test that a generic record with a slot of its own type over `Option[T]` for its type parameter `T` is an error that names the record (issue #176). No function is generic here: the copies of the types alone never end. Before, the compiler did not finish.

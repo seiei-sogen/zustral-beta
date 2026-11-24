@@ -1,0 +1,1 @@
+Test that a generic union with a case slot of its own type over `Option[T]` for its type parameter `T` is an error that names the union (issue #176). It is the program of 039 with a union for the record. Before, the compiler did not finish.

@@ -1,0 +1,1 @@
+Test that a method of a generic instance for `Box[U]` that calls itself for `U` compiles for a `Box` nested 9 deep (issue #176). Each copy of the method uses a copy for a type argument that nests less deep, so the copies end. The check for a generic declaration that uses itself with type arguments that nest deeper does not count these uses.

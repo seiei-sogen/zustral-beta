@@ -197,6 +197,13 @@ val store_instance_method_monomorph_definition : env -> method_mono_id -> mstmt 
 (** Get all uninstantiated monomorphs. *)
 val get_uninstantiated_monomorphs : env -> monomorph list
 
+(** The ID of the monomorph that was registered last, if any is registered. *)
+val get_id_of_last_registered_monomorph : env -> mono_id option
+
+(** The monomorphs registered after the one with the ID, in the order they were
+    registered. Without an ID: every monomorph. *)
+val get_monomorphs_registered_after : env -> mono_id option -> monomorph list
+
 (** Get a monomorph by ID. *)
 val get_monomorph : env -> mono_id -> monomorph
 

@@ -26,6 +26,7 @@ open Stages.Linked
 open Id
 open Region
 open Error
+open LineageOfMonomorph
 
 let make_substs2 (bindings: type_bindings) (typarams: typarams): type_bindings =
   let f (tp: type_parameter): (type_parameter * ty) option =
@@ -558,22 +559,33 @@ let rec monomorphize (env: env) (m: EvaluationOrderOfModule.ordered_module): (en
   Ok (env, MonoModule (module_name, decls @ decls'))
 
 and instantiate_monomorphs_until_exhausted (env: env): (env * mdecl list) =
+  instantiate_monomorphs_and_those_they_register no_lineages env
+
+and instantiate_monomorphs_and_those_they_register (lineages: lineages) (env: env): (env * mdecl list) =
   (* Get uninstantiated monomorphs from the environment. *)
   let monos: monomorph list = get_uninstantiated_monomorphs env in
   match monos with
   | first::rest ->
      (* If there are uninstantiated monomorphs, instantite them, and repeat the
         process. *)
-     let (env, decls): (env * mdecl list) = instantiate_monomorphs env (first::rest) in
-     let (env, decls') : (env * mdecl list) = instantiate_monomorphs_until_exhausted env in
+     let ((env, lineages), decls): ((env * lineages) * mdecl list) = instantiate_monomorphs env lineages (first::rest) in
+     let (env, decls') : (env * mdecl list) = instantiate_monomorphs_and_those_they_register lineages env in
      (env, decls @ decls')
   | [] ->
      (* If there are no uninstantiated monomorphs, we're done. *)
      (env, [])
 
-and instantiate_monomorphs (env: env) (monos: monomorph list): (env * mdecl list) =
-  (* Instantiate a list of monomorphs. *)
-  Util.map_with_context (fun (e, m) -> instantiate_monomorph e m) env monos
+(* Instantiate a list of monomorphs. Each gives its lineage to the monomorphs it
+   registers, which stops a generic declaration whose copies would never end
+   (LineageOfMonomorph, issue #176). *)
+and instantiate_monomorphs (env: env) (lineages: lineages) (monos: monomorph list): ((env * lineages) * mdecl list) =
+  let instantiate_one (((env, lineages), mono): (env * lineages) * monomorph): (env * lineages) * mdecl =
+    let last_registered_before: mono_id option = get_id_of_last_registered_monomorph env in
+    let (env, decl): (env * mdecl) = instantiate_monomorph env mono in
+    let registered: monomorph list = get_monomorphs_registered_after env last_registered_before in
+    ((env, lineages_with_monomorphs_registered_by env lineages mono registered), decl)
+  in
+  Util.map_with_context instantiate_one (env, lineages) monos
 
 and instantiate_monomorph (env: env) (mono: monomorph): (env * mdecl) =
   match mono with

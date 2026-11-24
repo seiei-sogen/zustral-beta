@@ -1,0 +1,1 @@
+Test that a generic function that calls itself twice, with `Option[T]` and with `Box[T]` for its type parameter `T`, is an error that names the function (issue #176). The copies of the function double at each step, so the check cannot wait for many steps. Before, the compiler did not finish.

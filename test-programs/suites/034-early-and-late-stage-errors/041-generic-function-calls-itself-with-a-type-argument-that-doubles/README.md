@@ -1,0 +1,1 @@
+Test that a generic function that calls itself with `Pair[T, T]` for its type parameter `T` is an error that names the function (issue #176). The type doubles in size at each step, so the check cannot wait for many steps. Before, the compiler did not finish.

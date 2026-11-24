@@ -1,0 +1,1 @@
+Test that a generic function that calls itself with `Option[T]` for its type parameter `T` is an error that names the function (issue #176). Each call needs a copy of the function for a larger type, so the copies never end. Before, the compiler did not finish.

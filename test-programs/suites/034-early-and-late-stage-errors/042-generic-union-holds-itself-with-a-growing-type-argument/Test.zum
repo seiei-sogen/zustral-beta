@@ -1,0 +1,21 @@
+pragma Unsafe_Module;
+
+import Zustral.Memory (
+    Pointer
+);
+
+module body Test is
+    union Chain[T: Free]: Free is
+        case Last;
+        case Link is
+            next: Pointer[Chain[Option[T]]];
+    end;
+
+    function size(c: Chain[Int32]): Int32 is
+        return 1;
+    end;
+
+    function main(): ExitCode is
+        return ExitSuccess();
+    end;
+end module body.
