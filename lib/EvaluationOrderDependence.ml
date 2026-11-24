@@ -5,17 +5,14 @@
 
    SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 *)
-open Identifier
 open Stages.Tast
 
-let rec depends_on_evaluation_order (write_borrowed_variables: identifier list) (expr: texpr): bool =
-  let depends: texpr -> bool = depends_on_evaluation_order write_borrowed_variables in
+let rec depends_on_evaluation_order (expr: texpr): bool =
+  let depends: texpr -> bool = depends_on_evaluation_order in
   match expr with
   | TNilConstant | TBoolConstant _ | TIntConstant _ | TFloatConstant _ | TStringConstant _
-  | TConstVar _ | TFunVar _ | TTemporary _ | TSizeOf _ ->
+  | TConstVar _ | TFunVar _ | TTemporary _ | TSizeOf _ | TParamVar _ | TLocalVar _ ->
      false
-  | TParamVar (name, _) | TLocalVar (name, _) ->
-     List.exists (equal_identifier name) write_borrowed_variables
   | TFuncall _ | TMethodCall _ | TVarMethodCall _ | TFptrCall _ | TEmbed _
   | TArithmeticNegation _ | TArrayIndex _ | TSpanIndex _ ->
      true

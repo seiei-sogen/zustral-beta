@@ -5,7 +5,6 @@
 
    SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 *)
-open Identifier
 open Stages.Tast
 open EvaluationOrderSteps
 
@@ -28,8 +27,7 @@ open EvaluationOrderSteps
     step of such a part goes in the branch of an [if] statement, and the
     statement assigns the value of the whole expression to a temporary.
 
-    The arguments are the variables that a write borrow covers where the
-    expression is, the number of temporaries this stage has made in the
+    The arguments are the number of temporaries this stage has made in the
     function so far, and the expression. The number comes back with the
     temporaries of the steps added. *)
-val fix_evaluation_order_of_expression : identifier list -> int -> texpr -> step list * texpr * int
+val fix_evaluation_order_of_expression : int -> texpr -> step list * texpr * int

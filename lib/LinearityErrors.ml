@@ -60,6 +60,7 @@ type t =
   | ConsumedOnSomePathsOnly of { name: identifier; expression: partly_evaluated_expression }
   | ConsumedWhileBorrowedRead of identifier
   | ConsumedWhileBorrowedWrite of identifier
+  | ReadWhileBorrowedWrite of identifier
   | AlreadyConsumed of identifier
   | AssignToUnconsumed of identifier
   | AssignToBorrowed of { name: identifier; state: reported_state }
@@ -150,6 +151,12 @@ let render (error: t): err_text =
        Text "The variable ";
        Code (ident_string name);
        Text " cannot be consumed while it is borrowed (mutably).";
+     ]
+  | ReadWhileBorrowedWrite name ->
+     [
+       Text "The variable ";
+       Code (ident_string name);
+       Text " cannot be read while it is borrowed (mutably): the reference can change it. Read it through the reference, or before the borrow.";
      ]
   | AlreadyConsumed name ->
      [

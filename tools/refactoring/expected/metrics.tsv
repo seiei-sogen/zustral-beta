@@ -34,10 +34,10 @@ lib/EnvUtils.ml	53	0	0	0	0	0	0	0	0	0	0
 lib/Error.ml	255	13	0	0	0	0	1	1	0	0	0
 lib/ErrorText.ml	44	0	0	0	0	0	2	0	0	0	0
 lib/Escape.ml	53	1	0	0	0	1	1	0	0	0	0
-lib/EvaluationOrderDependence.ml	30	0	0	0	0	0	0	0	0	0	0
-lib/EvaluationOrderOfExpression.ml	175	0	0	0	0	0	0	0	0	0	0
+lib/EvaluationOrderDependence.ml	27	0	0	0	0	0	0	0	0	0	0
+lib/EvaluationOrderOfExpression.ml	173	0	0	0	0	0	0	0	0	0	0
 lib/EvaluationOrderOfModule.ml	30	0	0	0	0	0	0	0	0	0	0
-lib/EvaluationOrderOfStatement.ml	86	0	0	0	0	0	0	0	0	0	0
+lib/EvaluationOrderOfStatement.ml	78	0	0	0	0	0	0	0	0	0	0
 lib/EvaluationOrderSteps.ml	33	0	0	0	0	0	0	0	0	0	0
 lib/ExportInstantiation.ml	30	0	0	0	0	0	0	0	0	0	0
 lib/ExternalNameCheck.ml	17	2	0	0	0	0	0	0	0	0	0
@@ -57,8 +57,8 @@ lib/LexEnv.ml	86	2	0	0	0	0	0	1	0	0	0
 lib/Lexer.mll	182	4	0	2	0	0	0	0	0	0	0
 lib/LiftControlPass.ml	221	0	0	0	0	0	0	0	0	0	0
 lib/LineageOfMonomorph.ml	88	1	0	0	0	0	0	0	0	0	0
-lib/LinearityCheck.ml	655	16	0	0	0	0	0	2	0	0	0
-lib/LinearityErrors.ml	198	0	0	0	0	0	0	0	0	0	0
+lib/LinearityCheck.ml	659	17	0	0	0	0	0	2	0	0	0
+lib/LinearityErrors.ml	205	0	0	0	0	0	0	0	0	0	0
 lib/LiteralTyping.ml	183	2	0	0	0	0	0	0	0	0	0
 lib/MonoType.ml	37	0	0	0	0	0	0	0	0	0	0
 lib/MonoTypeBindings.ml	48	0	0	0	0	0	0	0	0	0	0

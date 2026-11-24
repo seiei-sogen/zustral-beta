@@ -337,7 +337,9 @@ let rec check_var_in_expr (place: place) (tbl: state_tbl) (name: identifier) (ty
      else if universe_linear_ish (type_universe ty) then
        linearity_error place (ConsumedOnSomePathsOnly { name; expression = parts_at })
      else
-       tbl
+       (* A Free variable. Its read on one path is an error only under a
+          write borrow (issue #179). *)
+       check_var_consumed_on_every_path place tbl name ty at_most
   | OnEveryPath consumed ->
      check_var_consumed_on_every_path place tbl name ty consumed
 
@@ -363,9 +365,8 @@ and check_var_consumed_on_every_path (place: place) (tbl: state_tbl) (name: iden
      tbl
   | (  BorrowedWrite,         Zero) -> (* Write borrowed, and not consumed. *)
      tbl
-  | (  BorrowedWrite,            _) -> (* Write borrowed, and consumed zero or more times. *)
-     error_write_borrowed_and_consumed place name ty;
-     tbl
+  | (  BorrowedWrite,            _) -> (* Write borrowed, and used: an error in every universe. *)
+     error_write_borrowed_and_used place name ty
   | (       Consumed,         Zero) -> (* Already consumed, and unused. *)
      tbl
   | (       Consumed,            _) -> (* Already consumed, and consumed again zero or more times. *)
@@ -390,11 +391,14 @@ and error_read_borrowed_and_consumed (place: place) (name: identifier) (ty: ty) 
   else
     ()
 
-and error_write_borrowed_and_consumed (place: place) (name: identifier) (ty: ty) =
+(* A use of a Free variable copies its value. Under a write borrow, the
+   reference can change the variable, so the value the copy gets would depend
+   on when the use is evaluated (issue #179). *)
+and error_write_borrowed_and_used (place: place) (name: identifier) (ty: ty): state_tbl =
   if universe_linear_ish (type_universe ty) then
     linearity_error place (ConsumedWhileBorrowedWrite name)
   else
-    ()
+    linearity_error place (ReadWhileBorrowedWrite name)
 
 let check_expr (place: place) (tbl: state_tbl) (expr: texpr): state_tbl =
   (* For each variable in the table, check if the variable is used correctly in

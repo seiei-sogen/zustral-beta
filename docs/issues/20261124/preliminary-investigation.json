@@ -1,5 +1,5 @@
 {
-  "base_commit": "c854994438d6c978457d9ea8b4fc692501dd0761",
+  "base_commit": "28ac44ac206bfaa5b12bfbacc22905703a166625",
   "issues": [
     {
       "number": 33,
@@ -38,8 +38,8 @@
       "title": "要検討: 同じ文の中で書き込みの借用をしている変数を、読み取れてよいか",
       "summary": "同じ文の中で書き込みの借用をしている変数を、値として読めてよいかを決める。",
       "depends_on": [],
-      "status": "queued",
-      "reason": "README の「次にやること」の2番。判断が要る issue。線形性の検査に規則を足すことになるので、2番の中では大きい。"
+      "status": "done",
+      "reason": "PR を立てた。書き込みで借用されている変数の読み取りを、どの宇宙の変数でも断ると判断した。計画は issue-179/fix-plan.adoc。"
     },
     {
       "number": 90,
@@ -293,6 +293,22 @@
       "reason": "README の「次にやること」の5番。#71 の「先に決めてもらうこと」（#68、#46）に依存する。"
     },
     {
+      "number": 192,
+      "title": "要検討: 書き込みの借用と同じ文の読み取りを断る規則が、`for` の範囲と代入の左辺の添字には届かない（#179 の残り）",
+      "summary": "要検討: 書き込みの借用と同じ文の読み取りを断る規則が、`for` の範囲と代入の左辺の添字には届かない（#179 の残り）",
+      "depends_on": [],
+      "status": "skipped",
+      "reason": "README の「次にやること」の2番以降に挙がっていない。今回の指示（2番から順に進める）の範囲に入らない。"
+    },
+    {
+      "number": 191,
+      "title": "`for` ループの変数を借用すると、コンパイラが内部エラーで止まる",
+      "summary": "`for` ループの変数を借用すると、コンパイラが内部エラーで止まる",
+      "depends_on": [],
+      "status": "skipped",
+      "reason": "README の「次にやること」の2番以降に挙がっていない。今回の指示（2番から順に進める）の範囲に入らない。"
+    },
+    {
       "number": 168,
       "title": "`CIdent.zustral` と `CodeGen.zustral_prefix` を、何をするかが分かる名前に変える",
       "summary": "`CIdent.zustral` と `CodeGen.zustral_prefix` を、何をするかが分かる名前に変える",
@@ -472,18 +488,26 @@
     }
   ],
   "next_issue": {
-    "number": 60,
-    "current_behavior": "`Span[Int32, R]` を `print` する汎用の関数が、型検査を通る（`zustral compile … --target-type=c` が終了コード 0。実行して確かめた）。`lib/builtin/Pervasive.zum` で、`Nat8` のほかの 13 個の型の `printSpan` は `return nil;` だけである。",
+    "number": 179,
+    "current_behavior": "`showCellThenNumber(x, bump(&!x)); showNumberThenCell(bump(&!x), x);` が型検査を通り、`1`、`100`、`100`、`21` を出力する（test-programs/suites/020-evaluation-order/015 が固定している。スイートを実行して確かめた）。`borrow w: &![Int32, S] := &!n do let b: Int32 := n; … end borrow;` も通る（038-late-stage-paths/006）。断るコンパイラを試しに作ると、スイートで通らなくなるのはこの2件だけで、標準ライブラリと例は通った。",
     "related_code": [
-      "lib/builtin/Pervasive.zui: typeclass Printable",
-      "lib/builtin/Pervasive.zum: Printable のインスタンス（14 個の型と Span[B, R]）"
+      "lib/LinearityCheck.ml: check_var_consumed_on_every_path, error_write_borrowed_and_consumed",
+      "lib/LinearityErrors.ml",
+      "lib/EvaluationOrderDependence.ml: depends_on_evaluation_order",
+      "lib/EvaluationOrderOfExpression.ml",
+      "lib/EvaluationOrderOfStatement.ml"
     ],
     "related_tests": [
-      "test-programs/suites/008-typeclasses/022-orphan-instance-for-built-in-type"
+      "test-programs/suites/020-evaluation-order/015-variable-is-read-before-a-later-argument-changes-it",
+      "test-programs/suites/038-late-stage-paths/006-free-variable-used-while-borrowed"
     ],
-    "affected_ci_checks": [],
+    "affected_ci_checks": [
+      "tools/refactoring/measure.sh の記録",
+      "エラーメッセージにテストがあること（新しい文面）",
+      "tools/refactoring/coverage.sh"
+    ],
     "risks": [
-      "`Nat8` でない要素のスパンを `print` していたプログラムが、通らなくなる。リポジトリの中にはない（全検査が通る）。そういうプログラムは、これまでも何も出力していなかった。"
+      "書き込みで借用している変数を同じ文や borrow 文の本体で読んでいた利用者のプログラムが、通らなくなる。読み取りを借用の前の文へ移せば、通る。"
     ]
   }
 }

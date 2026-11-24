@@ -5,10 +5,6 @@ module body Test is
             let a: Int32 := n;
             printLn(a + !r);
         end borrow;
-        borrow w: &![Int32, S] := &!n do
-            let b: Int32 := n;
-            printLn(b + !w);
-        end borrow;
         return ExitSuccess();
     end;
 end module body.

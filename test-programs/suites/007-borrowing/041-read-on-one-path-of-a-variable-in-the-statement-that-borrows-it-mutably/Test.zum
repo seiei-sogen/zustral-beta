@@ -15,16 +15,11 @@ module body Test is
         return nil;
     end;
 
-    function showNumberThenCell(number: Int64, cell: Cell): Unit is
-        printLn(number);
-        printLn(cell.n);
-        return nil;
-    end;
-
     function main(): ExitCode is
         var x: Cell := Cell(n => 1);
-        showCellThenNumber(x, bump(&!x));
-        showNumberThenCell(bump(&!x), x);
+        let other: Cell := Cell(n => 0);
+        let chooseX: Bool := true;
+        showCellThenNumber(if chooseX then x else other, bump(&!x));
         return ExitSuccess();
     end;
 end module body.
