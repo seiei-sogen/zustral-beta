@@ -1,0 +1,72 @@
+= issue #90 と #144 の修正計画: 領域を値の型として書けることを、断るか
+
+== 目的
+
+issue #90（型の書き方の検査の抜け）と #144（おかしい振る舞い 13 件）は、1つの判断だけを残して、直っている。
+残っているのは、領域を値の型として書けること（`f(r: Static)`、`Pointer[Static]`）を、断るかである。
+#90 のコメントの項目と、#144 の 9 が、これに当たる。
+
+終わりの条件は、判断を記録して、2つの issue を閉じることである。同じ判断なので、1つの PR で閉じる。
+
+== 判断
+
+*ベータ版では、断らない。いまの振る舞いのままにする。*
+
+* 害がない。領域の型の値を作る式は、安全なモジュールにはない。`f(r: Static)` は、呼べない関数を宣言するだけである。型検査を通ったプログラムが、C のコンパイルで失敗することもない。領域は C の型を持つ（`lib/CodeGen.ml` の `gen_type` の `MonoRegionTy`）。
+* 断るための変更が大きい。型を読む所で断ると、次のコードとテストが要らなくなり、消すことになる。CI は、実行されない行を許さないからである。
+** `lib/ExtractionPass.ml` の `region_held_by_value` と `check_instance_methods_hold_no_region`。インスタンスのメソッドが、領域を値として持つ型を引数に取ることを調べている。
+** `lib/TypeMatch.ml` の、領域と領域でない型を照合する枝。`042-unexecuted-types` の 023 から 049 の 27 件が、この書き方で、その枝を実行している。
+** `040-region-as-value-type` の 36 件。受け付けることを、わざと固定している。
+* README の「ベータ版ではやらないこと」に、「Austral の不要な機能の削除。邪魔にならない限り残す」とある。この書き方は、Decimal の検証の邪魔にならない。
+* 本実装は、ゼロから書き直す。領域を値の型の位置に書けるかは、本実装の仕様を書くときに決めればよい。そのとき、`040-region-as-value-type` を、テスト集に引き継ぐかどうかも決める。
+
+所有者の代わりに選んだ既定である。違う判断にするときは、issue を開き直す。
+
+== 現状
+
+`origin/master` で、2つの issue の項目を、1つずつ実行して確かめた。
+
+#90 の表の5項目は、すべてエラーになる。
+
+[cols="2,3"]
+|===
+| 書いたもの | いまの結果
+
+| `let x: Int32[Bool, Unit] := 5;` | 「The type `Int32` expects `0` type arguments.」
+| `function f(x: &[Int32, Int32]): Int64` | 「The region of a reference or a span must be a region, … but `Int32` is not a region.」
+| `generic [T: Free(NoSuchClass)]` | 「… is constrained by `NoSuchClass`, but no typeclass with that name is declared or imported.」
+| `generic [T: Free(R)]`。`R` はレコード | 「… is constrained by `R`, which is not a typeclass.」
+| `borrow r: &![Bool, rho] := &!x do`。`x` は `Int32` | 「Expected a value of type `&![Bool, rho]`, but got a value of type `&![Int32, rho]`.」
+|===
+
+#90 のコメントの `function f(r: Static): Int32` は、終了コード 0 で通る。これが、残っている判断である。
+
+#144 の 13 項目は、9 のほかは直っている。12 のほかの 11 項目を、実行して確かめた。
+たとえば、2（`import Nope ();`）は「Unknown module `Nope`.」になり、10（スパンどうしの `=`）は「Values of the type `Span[Nat8, Static]` cannot be compared.」になり、11（`let s: ByteSize := 256;`）は通る。
+12（シグナルで止まった C コンパイラの終了コード）は、`cli/ProcessStatus.ml` が `128 + シグナルの番号` を返すことを、コードで確かめた。
+
+== 変更
+
+コンパイラとテストは、変えない。
+
+* `README.md`: 「いまの進み具合と、次にやること」節から #90 と #144 を消し、判断を記録する。
+
+== テスト
+
+足さない。振る舞いは変わらない。受け付けることは、`040-region-as-value-type` が固定している。
+
+== 確認
+
+CI の検査への影響はない。
+
+== 範囲外
+
+* 領域を値の型として書くことを断ること。本実装の仕様で決める。
+
+== セルフレビュー
+
+2つの issue の本文とコメントに照らして見直した。
+
+* #90 の表の5項目と、コメントの1項目のそれぞれに、いまの結果を書いた。
+* #144 の 13 項目のうち、9 のほかが直っていることを、項目ごとに確かめた。確かめ方（実行、コード、記録）を、項目ごとに書いた。
+* 見直しで直したこと: 2（`import Nope ();`）の最初の再現は、`import` を `module body` の中に書いていて、構文エラーだった。書き直して、実行し直した。
