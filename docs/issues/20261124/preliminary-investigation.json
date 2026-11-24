@@ -1,5 +1,5 @@
 {
-  "base_commit": "28ac44ac206bfaa5b12bfbacc22905703a166625",
+  "base_commit": "1578c2d6afa66f841164df8a702b090812b9b39a",
   "issues": [
     {
       "number": 33,
@@ -46,8 +46,8 @@
       "title": "型の書き方の検査に抜けがある（組み込みの型への引数、領域の位置、制約の名前、借用の型注釈）",
       "summary": "型の書き方の検査の抜け。5項目のうち4項目は直っている。残りは、領域を値の型として書けること（f(r: Static)）を断るかの判断だけである。",
       "depends_on": [],
-      "status": "queued",
-      "reason": "README の「次にやること」の2番。判断が要る issue。#144 の9と同じ判断。"
+      "status": "done",
+      "reason": "PR を立てた。領域を値の型として書けることは、ベータ版では断らないと判断した。計画は issue-90/fix-plan.adoc。"
     },
     {
       "number": 144,
@@ -56,8 +56,8 @@
       "depends_on": [
         90
       ],
-      "status": "queued",
-      "reason": "README の「次にやること」の2番。判断が要る issue。#90 と同じ判断なので、#90 の後。"
+      "status": "done",
+      "reason": "#90 と同じ PR で閉じる。同じ判断である。計画は issue-90/fix-plan.adoc。"
     },
     {
       "number": 171,
@@ -293,12 +293,20 @@
       "reason": "README の「次にやること」の5番。#71 の「先に決めてもらうこと」（#68、#46）に依存する。"
     },
     {
+      "number": 194,
+      "title": "出力先のパスに空白やシェルの記号があると、C コンパイラの呼び出しが壊れる。別のコマンドも実行される",
+      "summary": "出力先のパスに空白やシェルの記号があると、C コンパイラの呼び出しが壊れる。別のコマンドも実行される",
+      "depends_on": [],
+      "status": "skipped",
+      "reason": "README の「次にやること」の2番以降に挙がっていない。今回の指示（2番から順に進める）の範囲に入らない。"
+    },
+    {
       "number": 192,
       "title": "要検討: 書き込みの借用と同じ文の読み取りを断る規則が、`for` の範囲と代入の左辺の添字には届かない（#179 の残り）",
       "summary": "要検討: 書き込みの借用と同じ文の読み取りを断る規則が、`for` の範囲と代入の左辺の添字には届かない（#179 の残り）",
       "depends_on": [],
       "status": "skipped",
-      "reason": "README の「次にやること」の2番以降に挙がっていない。今回の指示（2番から順に進める）の範囲に入らない。"
+      "reason": "この実行の途中で立てた issue。この実行では扱わない。判断が要る。"
     },
     {
       "number": 191,
@@ -306,7 +314,7 @@
       "summary": "`for` ループの変数を借用すると、コンパイラが内部エラーで止まる",
       "depends_on": [],
       "status": "skipped",
-      "reason": "README の「次にやること」の2番以降に挙がっていない。今回の指示（2番から順に進める）の範囲に入らない。"
+      "reason": "この実行の途中で立てた issue。この実行では扱わない。"
     },
     {
       "number": 168,
@@ -488,26 +496,20 @@
     }
   ],
   "next_issue": {
-    "number": 179,
-    "current_behavior": "`showCellThenNumber(x, bump(&!x)); showNumberThenCell(bump(&!x), x);` が型検査を通り、`1`、`100`、`100`、`21` を出力する（test-programs/suites/020-evaluation-order/015 が固定している。スイートを実行して確かめた）。`borrow w: &![Int32, S] := &!n do let b: Int32 := n; … end borrow;` も通る（038-late-stage-paths/006）。断るコンパイラを試しに作ると、スイートで通らなくなるのはこの2件だけで、標準ライブラリと例は通った。",
+    "number": 90,
+    "current_behavior": "#90 の表の5項目は、すべてコンパイルエラーになる（3d2905f で1つずつ実行して確かめた。文面は issue-90/fix-plan.adoc にある）。コメントの `function f(r: Static): Int32` は、`zustral compile … --target-type=c` が終了コード 0 で通る。#144 の 13 項目は、9（型を書く位置に領域を書ける）のほかは直っている。12 のほかの 11 項目を実行して確かめ、12 は cli/ProcessStatus.ml のコードで確かめた。",
     "related_code": [
-      "lib/LinearityCheck.ml: check_var_consumed_on_every_path, error_write_borrowed_and_consumed",
-      "lib/LinearityErrors.ml",
-      "lib/EvaluationOrderDependence.ml: depends_on_evaluation_order",
-      "lib/EvaluationOrderOfExpression.ml",
-      "lib/EvaluationOrderOfStatement.ml"
+      "lib/TypeParser.ml（型を読む所）",
+      "lib/ExtractionPass.ml: region_held_by_value, check_instance_methods_hold_no_region",
+      "lib/CodeGen.ml: gen_type の MonoRegionTy"
     ],
     "related_tests": [
-      "test-programs/suites/020-evaluation-order/015-variable-is-read-before-a-later-argument-changes-it",
-      "test-programs/suites/038-late-stage-paths/006-free-variable-used-while-borrowed"
+      "test-programs/suites/040-region-as-value-type（36 件。受け付けることを固定している）",
+      "test-programs/suites/042-unexecuted-types の 023 から 049（領域と領域でない型の照合）"
     ],
-    "affected_ci_checks": [
-      "tools/refactoring/measure.sh の記録",
-      "エラーメッセージにテストがあること（新しい文面）",
-      "tools/refactoring/coverage.sh"
-    ],
+    "affected_ci_checks": [],
     "risks": [
-      "書き込みで借用している変数を同じ文や borrow 文の本体で読んでいた利用者のプログラムが、通らなくなる。読み取りを借用の前の文へ移せば、通る。"
+      "断らないと決めるので、2つの issue を閉じる根拠が判断だけになる。所有者が違う判断をしたら、issue を開き直す。"
     ]
   }
 }
