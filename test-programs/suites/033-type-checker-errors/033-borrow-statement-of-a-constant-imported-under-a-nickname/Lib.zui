@@ -1,0 +1,3 @@
+module Lib is
+    constant c: Int32;
+end module.

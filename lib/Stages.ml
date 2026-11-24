@@ -51,7 +51,7 @@ module Ast = struct
       }
     | ABorrow of {
         span: span;
-        original: identifier;
+        original: qident;
         rename: identifier;
         declared_reference: borrowing_mode * qtypespec;
         region: identifier;
@@ -175,7 +175,7 @@ module AstLC = struct
       }
     | ABorrow of {
         span: span;
-        original: identifier;
+        original: qident;
         rename: identifier;
         declared_reference: borrowing_mode * qtypespec;
         region: identifier;
@@ -262,7 +262,7 @@ module AstDP = struct
       }
     | ABorrow of {
         span: span;
-        original: identifier;
+        original: qident;
         rename: identifier;
         declared_reference: borrowing_mode * qtypespec;
         region: identifier;
@@ -343,7 +343,7 @@ module AstDB = struct
       }
     | ABorrow of {
         span: span;
-        original: identifier;
+        original: qident;
         rename: identifier;
         declared_reference: (borrowing_mode * qtypespec) option;
         (* None when the statement stands for an anonymous borrow (`&x`),

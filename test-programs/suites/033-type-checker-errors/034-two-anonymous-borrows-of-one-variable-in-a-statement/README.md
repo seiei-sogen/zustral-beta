@@ -1,0 +1,1 @@
+Test that the regions of two anonymous borrows of one variable in one statement have names an error message can tell apart (issue #178): `same(&x, &x)` cannot bind `R` to both `region of the borrow of x` and `region of the borrow of x (2)`. The compiler gave the regions the names `_tmp_region_1` and `_tmp_region_2` before.

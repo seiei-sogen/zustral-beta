@@ -1,0 +1,12 @@
+module body Test is
+    generic [R: Region]
+    function same(a: &[Int32, R], b: &[Int32, R]): Unit is
+        return nil;
+    end;
+
+    function main(): ExitCode is
+        let x: Int32 := 1;
+        same(&x, &x);
+        return ExitSuccess();
+    end;
+end module body.

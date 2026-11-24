@@ -1,5 +1,5 @@
 {
-  "base_commit": "19f4baa9f8f46fcbac9bd02fec170d57d5608b7c",
+  "base_commit": "2997b8e487c8377624e4eff07a3bb8823258ed2e",
   "issues": [
     {
       "number": 33,
@@ -96,8 +96,8 @@
       "title": "借用のエラーの文面: 取り込んだ定数の借用が「変数が見つからない」になり、無名の借用の領域が `_tmp_region_N` と出る",
       "summary": "借用のエラーの文面。取り込んだ定数の借用と、無名の借用の領域の名前。",
       "depends_on": [],
-      "status": "queued",
-      "reason": "README の「次にやること」の3番。残っている不具合。"
+      "status": "done",
+      "reason": "PR を立てた。無名の借用の領域は、借用した変数で示すと判断した。計画は issue-178/fix-plan.adoc。"
     },
     {
       "number": 87,
@@ -496,21 +496,26 @@
     }
   ],
   "next_issue": {
-    "number": 173,
-    "current_behavior": "stderr に 300 KB を書いて終了コード 1 で終わる `cc` を `PATH` の先頭に置くと、`timeout 15 zustral compile H.zum --entrypoint=H:main --output=h` が終了コード 124 で打ち切られる（3d2905f のコンパイラで実行して確かめた）。",
+    "number": 178,
+    "current_behavior": "取り込んだ定数 `c` を `show(&c);` と借用すると「I can't find a variable named `c`.」になる（3d2905f のコンパイラで実行して確かめた）。`r2->a := 2;`（r2 は読み取りの参照）は「Can't assign: lvalue is not a mutable reference: &[Int32, _tmp_region_1]」になる（033-type-checker-errors/013 が固定している）。",
     "related_code": [
-      "cli/Os.ml: run_command, compile_c_code",
-      "cli/CliEngine.ml: 生成した C の一時ファイル"
+      "lib/TypingPass.ml: augment_borrow",
+      "lib/DesugarBorrows.ml: wrap_stmt_with_borrows_at, anonymous_region",
+      "lib/AbstractionPass.ml: abs_stmt の CBorrow",
+      "lib/Stages.ml: ABorrow",
+      "lib/Region.ml: fresh_region"
     ],
     "related_tests": [
-      "test/OsTest.ml: test_run_command",
-      "test/UnexecutedWordingTest.ml: test_command_killed_by_signal"
+      "test-programs/suites/033-type-checker-errors/013-assign-through-read-reference",
+      "test-programs/suites/039-numbering-order/003-region-in-assigned-value",
+      "test-programs/suites/016-spans/009 と 010",
+      "test-programs/suites/044-unexecuted-declarations-and-late-stages/108-borrow-constant-mutably"
     ],
     "affected_ci_checks": [
-      "tools/refactoring/measure.sh の記録（cli/Os.ml の行数）"
+      "tools/refactoring/measure.sh の記録"
     ],
     "risks": [
-      "一時ディレクトリに書けないと、C コンパイラを呼ぶ前に失敗する。生成した C も同じ一時ディレクトリに書くので、新しい失敗の形ではない。"
+      "同じ変数の無名の借用が2つあると、文面では領域が同じ名前になる。型検査は番号で見分けるので、変わらない。"
     ]
   }
 }

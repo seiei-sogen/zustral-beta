@@ -1,0 +1,83 @@
+= issue #178 の修正計画: 借用のエラーの文面から、利用者が書いていない言葉をなくす
+
+== 目的
+
+issue #178 は、借用のエラーの文面に、利用者が書いていない言葉が出る場合を2つ挙げている。
+
+. 取り込んだ定数の借用が、「変数が見つからない」と出る。同じモジュールの定数なら、定数を名指すエラーになる。
+. 無名の借用（`&x`）の領域が、コンパイラが作った名前 `_tmp_region_N` で出る。issue は、どう示すかを決めるよう求めている。
+
+終わりの条件は、どちらの文面も、利用者が書いた名前だけで読めることである。
+
+== 判断
+
+2つ目について、*無名の借用の領域は、借用した変数で示す*。文面では `region of the borrow of x` と書く。issue が例に挙げた形である。
+
+1つの文が同じ変数を2回以上借用するとき（`same(&x, &x)`）は、2つ目からに番号を付ける（`region of the borrow of x (2)`）。番号がないと、「`R` を `region of the borrow of x` と `region of the borrow of x` の両方には束縛できない」という、読めない文面になる。領域を見分けるのは、名前ではなく `Region` の番号なので、型検査は変わらない。
+
+== 現状
+
+`origin/master` で確かめた。
+
+. `Lib` が公開する定数 `c` を取り込んで `show(&c);` と書くと、「I can't find a variable named `c`.」になる。同じモジュールの定数なら、「Cannot borrow the constant `c`: only a variable can be borrowed.」である。
++
+原因は、`lib/TypingPass.ml` の `augment_borrow` である。借用する変数を、借用のあるモジュールの名前で修飾して探す（`make_qident (module_name, original, original)`）。`borrow` 文は、変数を、修飾していない名前（`identifier`）で持っている。無名の借用の式（`BorrowExpr`）は、取り込みの表で修飾した名前（`qident`）を持つが、脱糖（`lib/DesugarBorrows.ml`）が `borrow` 文に書き換えるときに、元のモジュールを落とす。
+. `r2->a := 2;`（`r2` は読み取りの参照）は、「Can't assign: lvalue is not a mutable reference: &[Int32, _tmp_region_1]」になる（`033-type-checker-errors/013` が固定している）。
++
+`lib/Region.ml` の領域は、番号と名前を持つ。名前は、エラーの文面に出すためだけにある（`Type.type_string`）。領域の表（`RegionMap`）の鍵は、`borrow` 文が持つ名前で、領域の名前とは別である。
+
+== 変更
+
+* `lib/Stages.ml`: 型検査より前の4つの段（`Ast`、`AstLC`、`AstDP`、`AstDB`）の `ABorrow` の `original` を、`identifier` から `qident` にする。
+* `lib/AbstractionPass.ml`: 利用者が書いた `borrow` 文の変数を、取り込みの表で修飾する。
+* `lib/DesugarBorrows.ml`: 無名の借用を `borrow` 文にするとき、修飾した名前をそのまま渡す。
+* `lib/TypingPass.ml` の `augment_borrow`
+** 修飾した名前で変数を探す。取り込んだ定数は、宣言したモジュールで見つかる。文面と、後の段に渡す名前は、利用者が書いた名前（`local_name`）にする。
+** 無名の借用（型注釈のない `borrow` 文）の領域を、`region of the borrow of <変数>` という名前で作る。領域の表の鍵は、いままでの名前（`_tmp_region_N`）のままにする。同じ変数の借用が入れ子になっても、鍵は重ならない。
+
+== テスト
+
+最初に書く、失敗するテスト。`test-programs/suites/033-type-checker-errors` に置く。直す前は、どちらも「I can't find a variable」になる。
+
+* `032-borrow-of-an-imported-constant`: issue の1つ目のプログラム。
+* `033-borrow-statement-of-a-constant-imported-under-a-nickname`: `import Lib (c as limit);` の後の `borrow r: &[Int32, R] := &limit do`。文面は、利用者が書いた別名 `limit` で名指す。
+
+変えるテスト。期待する文面の `_tmp_region_N` が、`region of the borrow of <変数>` になる。
+
+* `016-spans/009`、`016-spans/010`、`033-type-checker-errors/013`、`039-numbering-order/003`
+
+== 確認
+
+* 計測値: 行数が変わる。`measure.sh --record` で記録し直す。
+* エラーメッセージのテスト: 文面の部品は増えない。型の表示の中身が変わるだけである。
+* カバレッジ: 領域の名前を選ぶ2つの枝を、利用者が書いた `borrow` 文と、無名の借用のテストが実行する。
+
+== 範囲外
+
+* エラーの位置。変えない。
+* 生成する C。領域は、C に出ない。
+
+== セルフレビュー
+
+issue の本文に照らして見直した。
+
+* 「取り込んだ定数の借用も、定数を名指すエラーにする」: 無名の借用と、`borrow` 文の両方で確かめる。別名で取り込んだ場合も、テストにした。
+* 「無名の借用の領域を、文面でどう示すかを決める」: 借用した変数で示す。
+* 呼び出し元: `ABorrow` を作るのは、`AbstractionPass`（利用者が書いた `borrow` 文）と `DesugarBorrows`（無名の借用、借り直し）である。間の2つの段（`LiftControlPass`、`DesugarPaths`）は、欄を写すだけである。
+* 見直しで足したこと: 借り直し（`&~x`）も `DesugarBorrows` の同じ所を通る。修飾した名前を渡しても、変数は局所の名前で見つかる（`Env.get_variable` が、先に `local_name` で探す）。
+
+== 実装の記録
+
+* `tools/refactoring/run-every-ci-check-locally.sh` の 14 個の検査は、すべて `ok` だった。
+* 直した後の文面は、次のとおりである。
++
+----
+Cannot borrow the constant `c`: only a variable can be borrowed.
+Cannot borrow the constant `limit`: only a variable can be borrowed.
+Can't assign: lvalue is not a mutable reference: &[Int32, region of the borrow of r2]
+----
+
+== コードレビューで直したこと
+
+* 取り込みの別名と同じ名前の変数（`import Lib (c as limit);` の後の `var limit`）を `&limit` や `&~limit` で借用すると、「I can't find a variable named `c_tmp_ref1`.」になった。直す前は「I can't find a variable named `c`.」だった。`lib/DesugarBorrows.ml` が、参照の名前を、取り込んだ元の名前（`original_name`）で宣言し、式は、利用者が書いた名前（`local_name`）で使っていたからである。宣言も `local_name` にした。テストは `009-names/015-anonymous-borrow-of-a-variable-named-as-an-import-nickname` である。
+* 同じ変数の無名の借用が2つあると、文面が「cannot be bound to both `region of the borrow of x` and `region of the borrow of x`」になった。最初は番号を付けないと決めていたが、読めない文面なので、2つ目からに番号を付けるように直した（`lib/RegionMap.ml` の `count_regions_named_for_borrows_of`）。テストは `033-type-checker-errors/034-two-anonymous-borrows-of-one-variable-in-a-statement` である。

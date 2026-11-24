@@ -10,11 +10,13 @@
 type region
 [@@deriving (eq, show)]
 
-(** The name of the region: `Static`, or the name of the borrow that made it. *)
+(** The name an error message shows for the region: `Static`, the region name a
+    `borrow` statement declares, or `region of the borrow of <variable>` for an
+    anonymous borrow. *)
 val region_name : region -> Identifier.identifier
 
 val static_region : region
 
-(** A region no other borrow has, with the borrow's name for its region, and the
+(** A region no other borrow has, with the name an error message shows for it, and the
     supply to take the next one from. *)
 val fresh_region : Identifier.identifier -> Supply.t -> region * Supply.t

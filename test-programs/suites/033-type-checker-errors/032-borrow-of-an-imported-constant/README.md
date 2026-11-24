@@ -1,0 +1,1 @@
+Test that the borrow of a constant imported from another module is an error that names the constant (issue #178). Before, the borrow looked for the constant in the module of the borrow only, and the error was ``I can't find a variable named `c`.``

@@ -1,0 +1,10 @@
+import Lib (c as limit);
+
+module body Test is
+    function main(): ExitCode is
+        borrow r: &[Int32, R] := &limit do
+            printLn(!r);
+        end borrow;
+        return ExitSuccess();
+    end;
+end module body.

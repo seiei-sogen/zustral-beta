@@ -74,7 +74,7 @@ lib/ParserInterface.ml	28	1	1	1	0	0	0	0	0	0	0
 lib/Pipeline.mli	98	0	0	0	0	0	6	0	0	0	0
 lib/Qualifier.ml	31	0	0	0	0	0	0	0	0	0	0
 lib/Region.ml	20	0	0	0	0	0	0	0	0	0	0
-lib/RegionMap.ml	25	1	0	0	0	0	0	0	0	0	0
+lib/RegionMap.ml	32	1	0	0	0	0	0	0	0	0	0
 lib/ReturnCheck.ml	133	3	0	0	0	0	0	0	0	0	0
 lib/SignatureTypeAtUse.ml	41	0	0	0	0	0	0	0	0	0	0
 lib/SourceContext.ml	54	0	0	0	0	0	1	0	0	0	0
@@ -98,6 +98,6 @@ lib/TypeStripping.ml	82	1	0	0	0	0	0	1	0	0	0
 lib/TypeSystem.ml	105	0	0	0	0	0	0	0	0	0	0
 lib/TypeVarSet.ml	16	0	0	0	0	0	0	0	0	0	0
 lib/TypeclassNamedByConstraint.ml	26	0	0	0	0	0	0	0	0	0	0
-lib/TypingPass.ml	816	36	0	0	0	1	0	0	0	0	0
+lib/TypingPass.ml	836	36	0	0	0	1	0	0	0	0	0
 lib/Util.ml	105	0	0	0	0	1	0	0	0	0	0
 lib/Version.ml	19	0	0	0	0	0	0	0	0	0	0
