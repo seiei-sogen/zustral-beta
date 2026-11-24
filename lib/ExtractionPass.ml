@@ -31,6 +31,7 @@ open Util
 open Error
 open ForeignType
 open TypeclassNamedByConstraint
+open TypeclassMethodMentionsTypeclassParameter
 
 let check_slots_are_free (place: place) (name: identifier) (slots: typed_slot list): unit =
   let check_slot_is_free (slot: typed_slot): unit =
@@ -184,33 +185,46 @@ let check_instance_methods_hold_no_region (env: env) (def: combined_definition) 
   | LConstant _ | LRecord _ | LUnion _ | LFunction _ | LTypeclass _ ->
      ()
 
-(* Every constraint of a type parameter names a typeclass (#90, #128). Runs
-   after every definition of the module is registered, because a constraint
-   may name a typeclass declared later in the module. *)
-let check_constraints_name_typeclasses (env: env) (def: combined_definition): unit =
+(* Every constraint of a type parameter names a typeclass (#90, #128), and a
+   type parameter of the Region universe has none: no instance is for a region
+   (#175). Runs after every definition of the module is registered, because a
+   constraint may name a typeclass declared later in the module. An error names
+   the owner of the type parameter; an instance is named by its typeclass and
+   its argument, which its linked definition has parsed. *)
+let check_constraints_of_type_parameters (env: env) (def: combined_definition) (ldef: linked_definition): unit =
   let place: place = AtSpan (definition_span def) in
-  let check_typaram (tp: type_parameter): unit =
+  let check_typaram (owner: TypeErrors.type_parameter_owner) (tp: type_parameter): unit =
+    let tyvar: type_var = typaram_to_tyvar tp in
     List.iter
       (fun (typeclass: sident) ->
-        let _: typeclass_id = ok_or_raise place (typeclass_named_by_constraint place env (typaram_to_tyvar tp) typeclass) in
-        ())
+        let _: typeclass_id = ok_or_raise place (typeclass_named_by_constraint place env owner tyvar typeclass) in
+        if equal_universe (typaram_universe tp) RegionUniverse then
+          type_error place (ConstraintOnRegionParameter { tyvar; owner; typeclass })
+        else
+          ())
       (typaram_constraints tp)
   in
-  let check_typarams (typarams: typarams): unit =
-    List.iter check_typaram (typarams_as_list typarams)
+  let check_typarams (owner_name: identifier) (typarams: typarams): unit =
+    List.iter (check_typaram (TypeErrors.DeclarationNamed owner_name)) (typarams_as_list typarams)
   in
+  (match ldef with
+   | LInstance (_, _, typeclass, typarams, argument, _, _) ->
+      let owner = TypeErrors.InstanceOfTypeclass { typeclass = original_name typeclass; argument } in
+      List.iter (check_typaram owner) (typarams_as_list typarams)
+   | LConstant _ | LRecord _ | LUnion _ | LFunction _ | LTypeclass _ ->
+      ());
   match def with
   | CConstant _ ->
      ()
-  | CRecord (_, _, _, typarams, _, _, _) | CUnion (_, _, _, typarams, _, _, _)
-  | CFunction (_, _, _, typarams, _, _, _, _, _) ->
-     check_typarams typarams
-  | CTypeclass (_, _, _, typaram, methods, _) ->
-     check_typaram typaram;
-     List.iter (fun (Combined.CMethodDecl (_, typarams, _, _, _)) -> check_typarams typarams) methods
-  | CInstance (_, _, _, _, typarams, _, methods, _) ->
-     check_typarams typarams;
-     List.iter (fun (CMethodDef (_, typarams, _, _, _, _)) -> check_typarams typarams) methods
+  | CRecord (_, _, name, typarams, _, _, _) | CUnion (_, _, name, typarams, _, _, _)
+  | CFunction (_, _, name, typarams, _, _, _, _, _) ->
+     check_typarams name typarams
+  | CTypeclass (_, _, name, typaram, methods, _) ->
+     check_typaram (TypeErrors.DeclarationNamed name) typaram;
+     List.iter (fun (Combined.CMethodDecl (method_name, typarams, _, _, _)) -> check_typarams method_name typarams) methods
+  | CInstance (_, _, _, _, _, _, methods, _) ->
+     (* The instance's own type parameters are checked above. *)
+     List.iter (fun (CMethodDef (method_name, typarams, _, _, _, _)) -> check_typarams method_name typarams) methods
 
 open Outcome.Syntax
 
@@ -251,7 +265,7 @@ let rec extract (env: env) (cmodule: combined_module): (env * linked_module) Out
   (* Extract all declarations from the module into the environment. *)
   let* (env, linked_defs) = extract_definitions env sigs (List.map snd reserved) in
   let* () = Outcome.catch (fun () -> List.iter2 (check_instance_methods_hold_no_region env) decls linked_defs) in
-  let* () = Outcome.catch (fun () -> List.iter (check_constraints_name_typeclasses env) decls) in
+  let* () = Outcome.catch (fun () -> List.iter2 (check_constraints_of_type_parameters env) decls linked_defs) in
   (* Construct the linked module *)
   let lmod = LinkedModule {
                  mod_id = mod_id;
@@ -500,16 +514,17 @@ and reserve_definition (env: env) (mod_id: mod_id) (mn: module_name) (def: combi
          let (env, typeclass_id) = register place env (NewTypeClass { mod_id; vis; name; docstring; param = typaram; }) in
          (* Convert the list of methods into a list of type_class_method records *)
          let typarams = typarams_from_list place [typaram] in
-         let method_map (Combined.CMethodDecl (name, method_typarams, params, rt, docstring)): type_class_method_input =
+         let method_map (Combined.CMethodDecl (method_name, method_typarams, params, rt, docstring)): type_class_method_input =
            let effective_typarams: typarams = merge_typarams place typarams method_typarams in
-           let _ = check_method_type_parameters_are_regions place name method_typarams in
+           let _ = check_method_type_parameters_are_regions place method_name method_typarams in
            let value_params = List.map (parse_param place effective_typarams) params
            and rt = parse' place rm effective_typarams rt in
+           check_typeclass_method_mentions_typeclass_parameter place name typaram method_name value_params rt;
            {
              mod_id;
              vis;
              typeclass_id;
-             name;
+             name = method_name;
              docstring;
              typarams = method_typarams;
              value_params;

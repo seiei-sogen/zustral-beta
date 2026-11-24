@@ -1,5 +1,5 @@
 {
-  "base_commit": "2997b8e487c8377624e4eff07a3bb8823258ed2e",
+  "base_commit": "6cd985165033cb13c24bb65674f2ca0a72ac77a1",
   "issues": [
     {
       "number": 33,
@@ -80,8 +80,8 @@
       "title": "型クラスとインスタンスの宣言の検査に、抜けが4つ残っている",
       "summary": "型クラスとインスタンスの宣言の検査に、抜けが4つ残っている。",
       "depends_on": [],
-      "status": "queued",
-      "reason": "README の「次にやること」の3番。残っている不具合。"
+      "status": "done",
+      "reason": "PR を立てた。Region 宇宙の型引数に付けた制約は、宣言のエラーにすると判断した。計画は issue-175/fix-plan.adoc。"
     },
     {
       "number": 172,
@@ -293,6 +293,22 @@
       "reason": "README の「次にやること」の5番。#71 の「先に決めてもらうこと」（#68、#46）に依存する。"
     },
     {
+      "number": 200,
+      "title": "型検査が、1つの関数の中の変数の数と、関数の数に対して、線形より速く遅くなる（#177 の残り）",
+      "summary": "型検査が、1つの関数の中の変数の数と、関数の数に対して、線形より速く遅くなる（#177 の残り）",
+      "depends_on": [],
+      "status": "skipped",
+      "reason": "この実行の途中で立てた issue。この実行では扱わない。"
+    },
+    {
+      "number": 199,
+      "title": "ファイルが改行のないコメントで終わると、ファイルの終わりのエラーの行が1つ大きくなる",
+      "summary": "ファイルが改行のないコメントで終わると、ファイルの終わりのエラーの行が1つ大きくなる",
+      "depends_on": [],
+      "status": "skipped",
+      "reason": "この実行の途中で立てた issue。この実行では扱わない。"
+    },
+    {
       "number": 194,
       "title": "出力先のパスに空白やシェルの記号があると、C コンパイラの呼び出しが壊れる。別のコマンドも実行される",
       "summary": "出力先のパスに空白やシェルの記号があると、C コンパイラの呼び出しが壊れる。別のコマンドも実行される",
@@ -496,26 +512,29 @@
     }
   ],
   "next_issue": {
-    "number": 178,
-    "current_behavior": "取り込んだ定数 `c` を `show(&c);` と借用すると「I can't find a variable named `c`.」になる（3d2905f のコンパイラで実行して確かめた）。`r2->a := 2;`（r2 は読み取りの参照）は「Can't assign: lvalue is not a mutable reference: &[Int32, _tmp_region_1]」になる（033-type-checker-errors/013 が固定している）。",
+    "number": 175,
+    "current_behavior": "4つの場合を、直す前のコンパイラ（d69429bd）で実行して確かめた。(1) `generic [A: Free] instance TC(Int32)` は宣言が通り、メソッドを呼ぶと単相化の段で `Parameter list and argument list don't have the same length` になる。(2) `method answer(): Int32` は宣言が通り、どの呼び出しも `No binding for this parameter: T` になる。(3) `generic [R: Region(Show)]` は通る。(4) インスタンスの型引数の制約のエラーが「The type parameter `U` of `Show`」と、型クラスを持ち主として言う。",
     "related_code": [
-      "lib/TypingPass.ml: augment_borrow",
-      "lib/DesugarBorrows.ml: wrap_stmt_with_borrows_at, anonymous_region",
-      "lib/AbstractionPass.ml: abs_stmt の CBorrow",
-      "lib/Stages.ml: ABorrow",
-      "lib/Region.ml: fresh_region"
+      "lib/TypeClasses.ml: check_instance_argument_has_right_shape",
+      "lib/ExtractionPass.ml: check_constraints_name_typeclasses",
+      "lib/TypeclassNamedByConstraint.ml",
+      "lib/TypeErrors.ml",
+      "lib/TypeCheckExpr.ml: make_substs",
+      "lib/Monomorphize.ml: make_bindings"
     ],
     "related_tests": [
-      "test-programs/suites/033-type-checker-errors/013-assign-through-read-reference",
-      "test-programs/suites/039-numbering-order/003-region-in-assigned-value",
-      "test-programs/suites/016-spans/009 と 010",
-      "test-programs/suites/044-unexecuted-declarations-and-late-stages/108-borrow-constant-mutably"
+      "test-programs/suites/033-type-checker-errors/004 と 007",
+      "test-programs/suites/031-declaration-errors/074",
+      "test-programs/suites/037-typeclass-and-environment-paths/050 と 051",
+      "test/UnexecutedDeclarationsTest.ml"
     ],
     "affected_ci_checks": [
-      "tools/refactoring/measure.sh の記録"
+      "tools/refactoring/measure.sh の記録",
+      "エラーメッセージにテストがあること（プログラムから届かなくなる文面が2つ）",
+      "tools/refactoring/coverage.sh"
     ],
     "risks": [
-      "同じ変数の無名の借用が2つあると、文面では領域が同じ名前になる。型検査は番号で見分けるので、変わらない。"
+      "型クラスの型引数を使わないメソッドと、引数に現れない型引数を持つインスタンスを宣言していたプログラムが、宣言の時点で通らなくなる。どちらも、呼ぶとエラーになっていた。"
     ]
   }
 }

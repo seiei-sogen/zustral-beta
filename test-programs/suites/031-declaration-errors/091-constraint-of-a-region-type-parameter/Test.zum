@@ -1,0 +1,14 @@
+module body Test is
+    typeclass Show(T: Free) is
+        method show(value: T): Int32;
+    end;
+
+    generic [R: Region(Show)]
+    function first(numbers: Span[Int32, R]): Int32 is
+        return 1;
+    end;
+
+    function main(): ExitCode is
+        return ExitSuccess();
+    end;
+end module body.

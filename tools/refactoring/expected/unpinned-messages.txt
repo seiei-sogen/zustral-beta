@@ -1,5 +1,8 @@
 lib/DeclarationErrors.ml	InstanceArgumentRegion	"Typeclass arguments cannot be regions."
 lib/GenericErrors.ml	InstanceOverlapTypeNotAllowed	"Not allowed"
+lib/GenericErrors.ml	NoBindingForParameter	"No binding for this parameter: "
+lib/GenericErrors.ml	ParameterArgumentLengthMismatch	"\narguments:\n"
+lib/GenericErrors.ml	ParameterArgumentLengthMismatch	"Parameter list and argument list don't have the same length:\n\nparameters:\n"
 lib/GenericErrors.ml	ParameterNotFound	"Parameter not found."
 lib/GenericErrors.ml	SymbolImportedTwice	"Cannot add symbol to the import map twice."
 lib/ParseErrors.ml	StringInvalidCharacter	"Character not allowed in string literal: "

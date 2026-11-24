@@ -13,14 +13,14 @@ open EnvTypes
 open Error
 
 (* The typeclass that a constraint of the type variable names, or the type error
-   that says what the name is instead. Extraction looks up every constraint
-   where it is declared (#128), so a call that needs an instance for a
-   constraint finds a typeclass. *)
-let typeclass_named_by_constraint (place: place) (env: env) (tyvar: type_var) (typeclass: sident): (typeclass_id, error) result =
+   that says what the name is instead. The error names the owner of the type
+   variable. Extraction looks up every constraint where it is declared (#128),
+   so a call that needs an instance for a constraint finds a typeclass. *)
+let typeclass_named_by_constraint (place: place) (env: env) (owner: TypeErrors.type_parameter_owner) (tyvar: type_var) (typeclass: sident): (typeclass_id, error) result =
   match get_decl_by_name place env typeclass with
   | Some (TypeClass { id; _ }) ->
      Ok id
   | Some (Constant _ | Record _ | Union _ | UnionCase _ | Function _ | TypeClassMethod _) ->
-     Error (Type (ConstraintNotTypeclass { tyvar; typeclass }))
+     Error (Type (ConstraintNotTypeclass { tyvar; owner; typeclass }))
   | None ->
-     Error (Type (ConstraintUnknownTypeclass { tyvar; typeclass }))
+     Error (Type (ConstraintUnknownTypeclass { tyvar; owner; typeclass }))

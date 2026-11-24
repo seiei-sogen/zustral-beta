@@ -40,6 +40,19 @@ type reference_difference =
   | DifferentUnderlyingRegion
   | DifferentTypeAndRegion
 
+(** What declares a type parameter, as an error names it. An instance has no
+    name of its own, so it is named by its typeclass and its argument (#175). *)
+type type_parameter_owner =
+  | DeclarationNamed of identifier
+  | InstanceOfTypeclass of { typeclass: identifier; argument: ty }
+
+let wording_of_type_parameter_owner (owner: type_parameter_owner): err_text =
+  match owner with
+  | DeclarationNamed name ->
+     [Text " of "; Code (ident_string name)]
+  | InstanceOfTypeclass { typeclass; argument } ->
+     [Text " of the instance of the typeclass "; Code (ident_string typeclass); Text " for "; Type argument]
+
 type t =
   | ArithmeticIncompatibleTypes of { lhs: ty; rhs: ty }
   | ArithmeticNotNumeric of ty
@@ -91,8 +104,9 @@ type t =
   | InstanceArgumentWrongUniverse of { ty: ty; expected: universe; actual: universe }
   | TypeMismatch of { expected: ty; actual: ty }
   | UnsatisfiedConstraint of { tyvar: type_var; ty: ty; typeclass: sident }
-  | ConstraintNotTypeclass of { tyvar: type_var; typeclass: sident }
-  | ConstraintUnknownTypeclass of { tyvar: type_var; typeclass: sident }
+  | ConstraintNotTypeclass of { tyvar: type_var; owner: type_parameter_owner; typeclass: sident }
+  | ConstraintUnknownTypeclass of { tyvar: type_var; owner: type_parameter_owner; typeclass: sident }
+  | ConstraintOnRegionParameter of { tyvar: type_var; owner: type_parameter_owner; typeclass: sident }
   | TypeArgumentWrongUniverse of { param: type_parameter; expected: universe; actual: universe }
   | UnresolvedType of identifier
   | IntegerDoesNotFit of { literal: NumberLiteral.int_literal; ty: ty }
@@ -509,28 +523,35 @@ let render (error: t): err_text =
        Code (ident_string tyvar_name);
        Text "."
      ]
-  | ConstraintNotTypeclass { tyvar; typeclass } ->
-     let (TypeVariable (tyvar_name, _, source, _, _)) = tyvar in
-     [
-       Text "The type parameter ";
-       Code (ident_string tyvar_name);
-       Text " of ";
-       Code (ident_string (original_name source));
-       Text " is constrained by ";
-       Code (ident_string (sident_name typeclass));
-       Text ", which is not a typeclass. A constraint must name a typeclass."
-     ]
-  | ConstraintUnknownTypeclass { tyvar; typeclass } ->
-     let (TypeVariable (tyvar_name, _, source, _, _)) = tyvar in
-     [
-       Text "The type parameter ";
-       Code (ident_string tyvar_name);
-       Text " of ";
-       Code (ident_string (original_name source));
-       Text " is constrained by ";
-       Code (ident_string (sident_name typeclass));
-       Text ", but no typeclass with that name is declared or imported."
-     ]
+  | ConstraintNotTypeclass { tyvar; owner; typeclass } ->
+     let (TypeVariable (tyvar_name, _, _, _, _)) = tyvar in
+     [Text "The type parameter "; Code (ident_string tyvar_name)]
+     @ wording_of_type_parameter_owner owner
+     @ [
+         Text " is constrained by ";
+         Code (ident_string (sident_name typeclass));
+         Text ", which is not a typeclass. A constraint must name a typeclass."
+       ]
+  | ConstraintUnknownTypeclass { tyvar; owner; typeclass } ->
+     let (TypeVariable (tyvar_name, _, _, _, _)) = tyvar in
+     [Text "The type parameter "; Code (ident_string tyvar_name)]
+     @ wording_of_type_parameter_owner owner
+     @ [
+         Text " is constrained by ";
+         Code (ident_string (sident_name typeclass));
+         Text ", but no typeclass with that name is declared or imported."
+       ]
+  | ConstraintOnRegionParameter { tyvar; owner; typeclass } ->
+     let (TypeVariable (tyvar_name, _, _, _, _)) = tyvar in
+     [Text "The type parameter "; Code (ident_string tyvar_name)]
+     @ wording_of_type_parameter_owner owner
+     @ [
+         Text " is constrained by ";
+         Code (ident_string (sident_name typeclass));
+         Text ", but it is a region. A region is the argument of no instance, so a type parameter of the ";
+         Code "Region";
+         Text " universe cannot have a constraint."
+       ]
   | TypeArgumentWrongUniverse { param; expected; actual } ->
      [
        Text "The type parameter ";

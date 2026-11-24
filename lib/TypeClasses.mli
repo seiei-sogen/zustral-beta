@@ -22,7 +22,8 @@ val check_instance_argument_has_right_universe : Error.place -> universe -> ty -
     argument type, check the argument has the right shape. That is, it is
     either:
 
-    1. A concrete type.
+    1. A built-in type that takes no type arguments, and the instance has no
+       type parameters.
 
     2. A generic type applid to a set of *distinct* type variables, which are
        all the variables in the type parameter set.

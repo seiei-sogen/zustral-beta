@@ -253,7 +253,11 @@ and try_constraint (ctx: scoped_ctx) (tv: type_var) (ty: ty) (typeclass_name: si
   | None ->
      Error (Declaration (DeclarationErrors.UnknownModule (sident_module_name typeclass_name)))
   | Some _ ->
-  let* id = TypeclassNamedByConstraint.typeclass_named_by_constraint (ctx_place ctx) (ctx_env ctx) tv typeclass_name in
+  (* Extraction found the typeclass where the type parameter is declared, and
+     named its owner there, so this lookup does not miss (#128, #175). *)
+  let (TypeVariable (_, _, declaration, _, _)) = tv in
+  let owner = TypeErrors.DeclarationNamed (original_name declaration) in
+  let* id = TypeclassNamedByConstraint.typeclass_named_by_constraint (ctx_place ctx) (ctx_env ctx) owner tv typeclass_name in
   (* Try to find an instance for the given typeclass name that implements this type. *)
   let* instance = try_get_instance (ctx_place ctx) (ctx_env ctx) (ctx_scope ctx) ty id in
   (match instance with

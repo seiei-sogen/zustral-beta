@@ -1,0 +1,104 @@
+= issue #175 の修正計画: 型クラスとインスタンスの宣言の検査の、4つの抜けを埋める
+
+== 目的
+
+issue #175 は、型クラスとインスタンスの宣言の検査に、抜けが4つ残っていることを報告している。
+
+終わりの条件は、4つの場合のどれも、宣言の位置でエラーになることである。4つ目は、エラーがインスタンスを名指すことである。
+
+== 現状
+
+`d69429bd` で確かめた。
+
+. 引数に現れない型引数を持つインスタンス（`generic [A: Free] instance TC(Int32)`）: 宣言は通る（終了コード 0）。メソッドを呼ぶと、単相化の段で `Parameter list and argument list don't have the same length` になる。位置は出ない。`033/004` が、これを固定していた。
++
+原因は、`lib/TypeClasses.ml` の `check_instance_argument_has_right_shape` である。余った型引数を数える `no_leftovers` を、型引数を取る引数のときにしか呼ばない。組み込みの型（`Unit`、`Bool`、整数、浮動小数点数）の引数では、呼ばない。
+. 型クラスの型引数を使わないメソッド（`method answer(): Int32`）: 宣言は通る。呼ぶと `No binding for this parameter: T` になる。`033/007` が、これを固定していた。
++
+メソッドの呼び出しは、型クラスの型引数の位置にある型で、インスタンスを選ぶ（`lib/TypeCheckExpr.ml` の `augment_method_call`）。引数にも戻り値の型にも型引数がなければ、選べない。宣言の時点では、何も調べていなかった。
+. `Region` 宇宙の型引数への制約（`generic [R: Region(Show)] function first(...)`）: 宣言は通る。インスタンスの型引数（`generic [A: Free, R: Region(Show)] instance Show(Span[A, R])`）でも通る。
+. インスタンスの型引数の制約のエラー（`generic [U: Free(Foo)] instance Show(Box[U])`、`Foo` はレコード）: 文面は `The type parameter U of Show is constrained by Foo, ...` である。
++
+インスタンスの型引数は、出どころ（`TypeParameter` の `qident`）として、型クラスの名前を持つ（`lib/CombiningPass.ml` の `name_typarams`）。文面は、その出どころを、型引数の持ち主として出していた。
+
+== 変更
+
+* `lib/TypeClasses.ml` の `check_instance_argument_has_right_shape`: 組み込みの型の引数でも、`no_leftovers 0` を呼ぶ。インスタンスが型引数を持てば、`InstanceLeftoverTypeParameters` になる。
+* `lib/TypeclassMethodMentionsTypeclassParameter.ml`（新しいファイル）: `check_typeclass_method_mentions_typeclass_parameter`。型クラスのメソッドの引数か戻り値の型が、型クラスの型引数を含むことを確かめる。含まなければ、`DeclarationErrors` に足した `MethodWithoutTypeclassParameter` にする。
+** 戻り値の型だけが含むメソッドは、通す。呼び出しの位置が期待する型で、型引数が決まるからである。汎用の関数の `check_all_type_parameters_appear_in_signature` と同じ基準である。
+** `lib/ExtractionPass.ml` の、型クラスの抽出で呼ぶ。そこで、メソッドの名前の変数を `name` から `method_name` に改めた。型クラスの名前の `name` を隠していたからである。
+* `Region` 宇宙の型引数への制約は、エラーにする（`TypeErrors.ConstraintOnRegionParameter`）。意味を決める案は、採らない。
+** 引数が region のインスタンスはない（`InstanceArgumentRegion`）。型引数が `Region` 宇宙の型クラスもない（`TypeclassParamIsRegion`）。だから、region はどの制約も満たさない。
+** issue が「エラーにするか、意味を決める」とした点で、所有者の代わりに選んだ既定である。違う判断にするときは、この PR を取り消して、issue を開き直す。
+** 制約の名前を引いた後で調べる。名前が型クラスでなければ、そのエラーが先に出る。既にあるテスト `031-declaration-errors/075-constraint-of-a-method-type-parameter-names-nothing` の文面を変えないためである。
+* 型引数の持ち主: `lib/TypeErrors.ml` に、型 `type_parameter_owner` を足す。名前のある宣言（`DeclarationNamed`）か、インスタンス（`InstanceOfTypeclass { typeclass; argument }`）である。
+** インスタンスは名前を持たないので、型クラスと引数で名指す。文面は `the instance of the typeclass Show for Box[U]` である。`InstanceMissingMethod` など、既にある文面に合わせた。
+** `ConstraintNotTypeclass`、`ConstraintUnknownTypeclass`、`ConstraintOnRegionParameter` が、持ち主を持つ。文面の「` of ` と持ち主」の部分は、`wording_of_type_parameter_owner` が作る。
+* `lib/TypeclassNamedByConstraint.ml`: 持ち主を受け取り、エラーに入れる。
+* `lib/ExtractionPass.ml`: `check_constraints_name_typeclasses` を `check_constraints_of_type_parameters` に改名した。`Region` の制約も調べるからである。宣言ごとに、その名前を持ち主として渡す。インスタンスの引数は、リンクした定義（`LInstance`）から取る。結合した定義では、引数は型の指定のままで、型になっていないからである。
+* `lib/TypeMatch.ml` の `try_constraint`: 型変数の出どころを、持ち主として渡す。抽出が、宣言の位置で、すべての制約を引いているので、ここでの検索は外れない。
+* `lib/TypeCheckExpr.ml` の `make_substs`: 束縛のない型引数を外す `match` を、`Option.map` の1行にした。振る舞いは変わらない。`None` の枝を実行していたのは、1つ目のプログラム（`033/004`）だけだった。直した後は、インスタンスの型引数がすべて引数に現れるので、どのプログラムも、束縛のない型引数をここへ渡さない。
+
+出どころそのものを直す案（インスタンスの型引数に、インスタンスを指す出どころを持たせる）は、採らない。出どころは `qident` で、インスタンスには名前がない。出どころは、型変数の同一性にも使われる。
+
+== テスト
+
+最初に書く、失敗するテスト。直す前は、どれも失敗した。
+
+* `031-declaration-errors/089-instance-for-a-built-in-type-with-a-type-parameter`: 1つ目。`033/004` を移して、期待するエラーを宣言の位置のものに変えた。
+* `031-declaration-errors/090-typeclass-method-without-the-typeclass-parameter`: 2つ目。`033/007` を移して、同じく変えた。
+* `031-declaration-errors/091-constraint-of-a-region-type-parameter`: 3つ目。新しいテストである。
+* `037-typeclass-and-environment-paths/050-instance-skipped-constraint-not-typeclass` と `051-instance-skipped-constraint-unknown-typeclass`: 4つ目。期待する文面を、インスタンスを名指す形に変えた。
+
+直した後で、期待が変わったテスト:
+
+* `031-declaration-errors/074-constraint-of-an-instance-type-parameter-names-nothing`: 4つ目の文面になった。
+* `008-typeclasses/019-instance-method-typaram-overlap`: `generic [U: Type] instance Foo(Nat8)` が、1つ目のエラーで先に断られるようになった。テストの狙い（インスタンスとメソッドの型引数の名前がぶつかること）を保つため、インスタンスを `Box[U]` のものにした。
+
+単体テスト:
+
+* `test/UnexecutedDeclarationsTest.ml` の `test_a_method_call_binds_no_typeclass_parameter`（新しいテスト）: 型クラスの型引数を含まないメソッドの呼び出しを、手で作った環境で型検査する。`NoBindingForParameter` になることを確かめる。プログラムからは届かなくなった行を実行する。
+* `test/UnexecutedDeclarationsTest.ml` の `test_a_method_call_leaves_out_an_unbound_parameter`: issue が「誤り」と書いたコメントは、この修正で正しくなった。#175 までの経緯を足した。
+* `test/UnexecutedWordingTest.ml`: `ParameterArgumentLengthMismatch` と `NoBindingForParameter` の文面を確かめる。前者には型引数を1つ渡す。型引数を文字列にする `show_type_parameter` を実行していたのも、`033/004` だけだったからである。
+
+== 確認
+
+* 計測値: `lib/` にファイルが1つ増え、行数が変わる。`measure.sh --record` で記録し直す。
+* エラーメッセージのテスト: 新しい2つの文面と、持ち主の文面を、上のテストが固定する。
+* プログラムから届かなくなった文面: `Parameter list and argument list don't have the same length` と `No binding for this parameter`。`tools/refactoring/expected/unpinned-messages.txt` と `unexecuted-message-lines.txt` に記録し、単体テストで実行する。既にある `ParameterNotFound` などと同じ扱いである。
+* カバレッジ: 新しい行は、上のテストが実行する。持ち主の文面の2つの枝は、091（名前のある宣言）と 050（インスタンス）が実行する。`033/004` と `033/007` だけが実行していた行は、単体テストが実行するか、`make_substs` のように1行にまとめた。
+
+== 範囲外
+
+* 型引数の出どころを、`qident` の代わりに、持ち主の型にすること。型変数を使うすべての段に及ぶ。
+* `docs/llm/plan-fix-all-open-bug-issues-20261117.md` の、`033/004` と `033/007` への言及。日付のある計画で、当時の状態を書いている。
+
+== セルフレビュー
+
+issue の本文に照らして見直した。
+
+* 「1つ目と2つ目は、宣言の位置でエラーにする」: 089 と 090 で確かめた。
+* 「3つ目は、エラーにするか、意味を決める」: エラーにした。理由は「変更」の節にある。関数の型引数（091）と、インスタンスの型引数で確かめた。
+* 「4つ目は、インスタンスを名指す文面にする」: 050、051、074 で確かめた。`Region` の制約のエラーも、同じ持ち主の文面を使う。
+* `test_a_method_call_leaves_out_an_unbound_parameter` のコメント: 直した後は、正しい。
+* 呼び出し元: `typeclass_named_by_constraint` を呼ぶのは、抽出と `TypeMatch.try_constraint` の2か所である。`check_instance_argument_has_right_shape` を呼ぶのは、インスタンスの抽出と、単体テストである。
+* 見直しで足したこと: `test-programs/suites/038-late-stage-paths/011-function-pointer-missing-type-argument/README.md` が、`Parameter list ...` の文面を `033/004` が固定すると書いていた。単体テストが持つ、と改めた。`037/014` と `037/015` の README の関数名も、改名に合わせた。
+
+== 実装の記録
+
+* 4つの場合を、直す前と後で実行した。直す前は、1つ目から3つ目が終了コード 0 で通り、4つ目は `of Show` と言った。直した後は、どれも宣言の位置のエラー（終了コード 255）になる。
++
+----
+The number of type parameters in the instance declaration must be the same as the number of type variables applied to the argument.
+The method `answer` of the typeclass `TC` does not mention the type parameter `T` of the typeclass in its parameters or in its return type, so no call of it can choose an instance.
+The type parameter `R` of `first` is constrained by `Show`, but it is a region. A region is the argument of no instance, so a type parameter of the `Region` universe cannot have a constraint.
+The type parameter `U` of the instance of the typeclass `Show` for `Box[U]` is constrained by `Foo`, which is not a typeclass. A constraint must name a typeclass.
+----
+* 戻り値の型だけが型クラスの型引数を含むメソッド（`method make(): T`）は、`let x: Int32 := make();` で呼べることを確かめた。2つ目の検査は、これを断らない。
+* 計画と違うこと: 最初の検査の実行で、`every-line-is-executed` が5行を報告した。`show_type_parameter` と `qident` の `show`（`Parameter list ...` の文面が使う）と、`make_substs` の `None` の枝である。どれも `033/004` だけが実行していた。文面の単体テストに型引数を1つ渡し、`make_substs` は1行にまとめた（「変更」の節）。
+* `tools/refactoring/run-every-ci-check-locally.sh` の 14 個の検査は、すべて `ok` だった。
+
+== コードレビューで直したこと
+
+* 3つ目（`Region` 宇宙の型引数への制約）のうち、インスタンスの型引数の場合には、テストがなかった。手で確かめただけだった。`031-declaration-errors/092-constraint-of-a-region-type-parameter-of-an-instance` を足した。`generic [A: Free, R: Region(Show)] instance Show(Span[A, R])` が、インスタンスを名指す文面で断られることを固定する。
+* そっけない名前を2つ改めた（AGENTS.md の「命名」）。`lib/TypeclassMethodMentionsTypeclassParameter.ml` の `mentions` を `type_mentions_typeclass_parameter` に、`test/UnexecutedWordingTest.ml` の `a` を `type_parameter_without_argument` にした。振る舞いは変わらない。

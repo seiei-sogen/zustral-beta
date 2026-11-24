@@ -1,0 +1,1 @@
+Test that a type parameter of the `Region` universe cannot have a constraint, even one that names a typeclass (issue #175). No instance has a region for its argument, so no region satisfies a constraint. The error is where the function is declared. Before, the declaration passed whenever the constraint named a typeclass.

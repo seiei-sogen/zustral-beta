@@ -4,6 +4,13 @@ lib/GenericErrors.ml	| SymbolImportedTwice ->
 lib/GenericErrors.ml	Text "Cannot add symbol to the import map twice."
 lib/GenericErrors.ml	| ParameterNotFound ->
 lib/GenericErrors.ml	Text "Parameter not found."
+lib/GenericErrors.ml	| ParameterArgumentLengthMismatch { parameters; arguments } ->
+lib/GenericErrors.ml	Text ("Parameter list and argument list don't have the same length:\n\nparameters:\n"
+lib/GenericErrors.ml	^ (String.concat ", " (List.map show_type_parameter parameters))
+lib/GenericErrors.ml	^ "\narguments:\n"
+lib/GenericErrors.ml	^ (String.concat ", " (List.map show_mono_ty arguments)))
+lib/GenericErrors.ml	| NoBindingForParameter name ->
+lib/GenericErrors.ml	Text ("No binding for this parameter: " ^ (ident_string name))
 lib/GenericErrors.ml	| InstanceOverlapTypeNotAllowed ->
 lib/GenericErrors.ml	Text "Not allowed"
 lib/ParseErrors.ml	| StringInvalidCharacter lexeme ->

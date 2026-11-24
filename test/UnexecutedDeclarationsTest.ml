@@ -532,10 +532,11 @@ let test_a_monomorph_with_another_number_of_type_arguments _ =
 
 (* An instance whose type parameter its argument does not name: extraction
    rejects it (InstanceLeftoverTypeParameters), so no program builds this
-   environment. A call of its method on `Unit`, the instance's argument, leaves
-   the parameter out of the method's type arguments. The test executes the
-   check that counts them and fixes the error it raises; it says nothing about
-   a program. *)
+   environment. Until #175, extraction counted the type parameters only for an
+   argument that takes type arguments, and a program did build it. A call of
+   its method on `Unit`, the instance's argument, leaves the parameter out of
+   the method's type arguments. The test executes the check that counts them
+   and fixes the error it raises; it says nothing about a program. *)
 let test_a_method_call_leaves_out_an_unbound_parameter _ =
   let (env, mod_id) = add_example Env.empty_env in
   let (env, typeclass_id, method_id) = register_typeclass_with_method env mod_id in
@@ -559,6 +560,17 @@ let test_a_method_call_leaves_out_an_unbound_parameter _ =
   let (env, _) = Env.add_or_get_function_monomorph env function_id MonoTypeBindings.empty_mono_bindings in
   assert_equal (Some (Generic (ParameterArgumentLengthMismatch { parameters = [u]; arguments = [] })))
     (instantiate env)
+
+(* A call of a method that does not mention the parameter of its typeclass,
+   `m(): Unit` of `C`: nothing binds the parameter, so nothing chooses an
+   instance. Extraction rejects such a method where the typeclass is declared
+   (#175), so no program gets this call to the type checker. *)
+let test_a_method_call_binds_no_typeclass_parameter _ =
+  let (env, mod_id) = add_example Env.empty_env in
+  let (env, _, _) = register_typeclass_with_method env mod_id in
+  let ctx = TypeCheckExpr.make_ctx NoSpan example env RegionMap.empty_region_map TypeParameters.empty_typarams LexEnv.empty_lexenv in
+  assert_equal (Some (Generic (NoBindingForParameter (make_ident "T"))))
+    (error_of (fun () -> TypeCheckExpr.infer ctx (Stages.AstDB.FunctionCall (named "m", Stages.AstDB.Positional []))))
 
 (* A method call on a type parameter whose type argument has no instance: the
    type checker checks the constraints wherever it binds a type parameter (#128,
@@ -733,6 +745,7 @@ let suite =
       "a monomorph with bindings for other parameters" >:: test_a_monomorph_with_bindings_for_other_parameters;
       "a monomorph with another number of type arguments" >:: test_a_monomorph_with_another_number_of_type_arguments;
       "a method call leaves out an unbound parameter" >:: test_a_method_call_leaves_out_an_unbound_parameter;
+      "a method call binds no typeclass parameter" >:: test_a_method_call_binds_no_typeclass_parameter;
       "a method call on a type without an instance" >:: test_a_method_call_on_a_type_without_an_instance;
       "borrows of values that are not addresses" >:: test_borrows_of_values_that_are_not_addresses;
       "an imported function of an exported signature" >:: test_an_imported_function_of_an_exported_signature;

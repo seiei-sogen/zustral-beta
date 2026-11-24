@@ -3,8 +3,12 @@ module body Test is
         method foo(x: T): Unit;
     end;
 
-    generic [U: Type]
-    instance Foo(Nat8) is
+    record Box[A: Free]: Free is
+        value: A;
+    end;
+
+    generic [U: Free]
+    instance Foo(Box[U]) is
         generic [U: Type]
         method foo(x: U): Unit is
             return nil;

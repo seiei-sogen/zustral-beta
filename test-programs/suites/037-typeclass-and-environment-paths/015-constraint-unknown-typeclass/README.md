@@ -1,1 +1,1 @@
-A type parameter constraint that names no declaration is reported as a type error where the generic function is declared (lib/ExtractionPass.ml, check_constraints_name_typeclasses; issue #128). Before, it was reported where the function is called.
+A type parameter constraint that names no declaration is reported as a type error where the generic function is declared (lib/ExtractionPass.ml, check_constraints_of_type_parameters; issue #128). Before, it was reported where the function is called.

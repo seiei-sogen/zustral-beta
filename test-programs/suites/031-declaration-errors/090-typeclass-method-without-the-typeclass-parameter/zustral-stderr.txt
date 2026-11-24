@@ -1,0 +1,29 @@
+{
+  "module": "Test",
+  "kind": "Declaration Error",
+  "text": [
+    { "type": "text", "content": "The method " },
+    { "type": "code", "content": "answer" },
+    { "type": "text", "content": " of the typeclass " },
+    { "type": "code", "content": "TC" },
+    { "type": "text", "content": " does not mention the type parameter " },
+    { "type": "code", "content": "T" },
+    {
+      "type": "text",
+      "content": " of the typeclass in its parameters or in its return type, so no call of it can choose an instance."
+    }
+  ],
+  "span": {
+    "filename": "test-programs/suites/031-declaration-errors/090-typeclass-method-without-the-typeclass-parameter/Test.zum",
+    "startp": { "line": 2, "column": 4 },
+    "end": { "line": 4, "column": 8 }
+  },
+  "context": [
+    [ 1, "module body Test is" ],
+    [ 2, "    typeclass TC(T: Free) is" ],
+    [ 3, "        method answer(): Int32;" ],
+    [ 4, "    end;" ],
+    [ 5, "" ],
+    [ 6, "    instance TC(Int32) is" ]
+  ]
+}

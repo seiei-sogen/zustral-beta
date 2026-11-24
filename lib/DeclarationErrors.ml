@@ -82,6 +82,7 @@ type t =
   | InstanceMethodDefinedTwice of { typeclass: identifier; ty: ty; method_name: identifier }
   | InstanceMethodMismatch of { typeclass: identifier; ty: ty; method_name: identifier; difference: function_difference }
   | MethodTypeParameterNotRegion of { method_name: identifier; typaram: type_parameter }
+  | MethodWithoutTypeclassParameter of { typeclass: identifier; method_name: identifier; typaram: identifier }
   | TypeclassParamIsRegion of identifier
   | TypesAreNotRegions of { name: identifier; declaration: declaration_kind }
   | RegionUsedAsType of identifier
@@ -384,6 +385,16 @@ let render (error: t): err_text =
        Text " universe. The type parameters of a method must be in the ";
        Code "Region";
        Text " universe."
+     ]
+  | MethodWithoutTypeclassParameter { typeclass; method_name; typaram } ->
+     [
+       Text "The method ";
+       Code (ident_string method_name);
+       Text " of the typeclass ";
+       Code (ident_string typeclass);
+       Text " does not mention the type parameter ";
+       Code (ident_string typaram);
+       Text " of the typeclass in its parameters or in its return type, so no call of it can choose an instance."
      ]
   | TypeclassParamIsRegion name ->
      [

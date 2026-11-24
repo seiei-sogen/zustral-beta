@@ -1,0 +1,37 @@
+{
+  "module": "Test",
+  "kind": "Type Error",
+  "text": [
+    { "type": "text", "content": "The type parameter " },
+    { "type": "code", "content": "R" },
+    { "type": "text", "content": " of the instance of the typeclass " },
+    { "type": "code", "content": "Show" },
+    { "type": "text", "content": " for " },
+    { "type": "type", "content": "Span[A, R]" },
+    { "type": "text", "content": " is constrained by " },
+    { "type": "code", "content": "Show" },
+    {
+      "type": "text",
+      "content": ", but it is a region. A region is the argument of no instance, so a type parameter of the "
+    },
+    { "type": "code", "content": "Region" },
+    { "type": "text", "content": " universe cannot have a constraint." }
+  ],
+  "span": {
+    "filename": "test-programs/suites/031-declaration-errors/092-constraint-of-a-region-type-parameter-of-an-instance/Test.zum",
+    "startp": { "line": 6, "column": 4 },
+    "end": { "line": 11, "column": 8 }
+  },
+  "context": [
+    [ 4, "    end;" ],
+    [ 5, "" ],
+    [ 6, "    generic [A: Free, R: Region(Show)]" ],
+    [ 7, "    instance Show(Span[A, R]) is" ],
+    [ 8, "        method show(value: Span[A, R]): Int32 is" ],
+    [ 9, "            return 1;" ],
+    [ 10, "        end;" ],
+    [ 11, "    end;" ],
+    [ 12, "" ],
+    [ 13, "    function main(): ExitCode is" ]
+  ]
+}

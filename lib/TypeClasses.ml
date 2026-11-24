@@ -52,11 +52,10 @@ let check_instance_argument_has_right_shape (place: place) (typarams: typarams) 
       declaration_error place InstanceLeftoverTypeParameters
   in
   match arg with
-  | Unit -> ()
-  | Boolean -> ()
-  | Integer _ -> ()
-  | SingleFloat -> ()
-  | DoubleFloat -> ()
+  | Unit | Boolean | Integer _ | SingleFloat | DoubleFloat ->
+     (* A built-in type takes no type arguments, so nothing binds a type
+        parameter of the instance (#175). *)
+     no_leftovers 0
   | NamedType (_, _, args, _) ->
      let _ = all_distinct (List.map is_tyvar args) in
      let _ = no_leftovers (List.length args) in

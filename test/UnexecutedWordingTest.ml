@@ -28,6 +28,10 @@ let test_generic_wording _ =
   let open GenericErrors in
   eq "Cannot add symbol to the import map twice." (wording (Generic SymbolImportedTwice));
   eq "Parameter not found." (wording (Generic ParameterNotFound));
+  let type_parameter_without_argument = TypeParameter.make_typaram (make_ident "A", Type.FreeUniverse, make_qident (make_mod_name "Test", make_ident "C", make_ident "C"), []) in
+  eq ("Parameter list and argument list don't have the same length:\n\nparameters:\n" ^ TypeParameter.show_type_parameter type_parameter_without_argument ^ "\narguments:\n")
+    (wording (Generic (ParameterArgumentLengthMismatch { parameters = [type_parameter_without_argument]; arguments = [] })));
+  eq "No binding for this parameter: T" (wording (Generic (NoBindingForParameter (make_ident "T"))));
   eq "Not allowed" (wording (Generic InstanceOverlapTypeNotAllowed))
 
 let test_declaration_wording _ =
