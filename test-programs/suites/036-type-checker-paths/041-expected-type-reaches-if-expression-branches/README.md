@@ -1,0 +1,1 @@
+Pins that the type a `let` gives its value reaches both branches of an `if` expression: a call there that needs it, `None()`, gets its type from it (issue #35, lib/TypeCheckExpr.ml, infer_with_expected).

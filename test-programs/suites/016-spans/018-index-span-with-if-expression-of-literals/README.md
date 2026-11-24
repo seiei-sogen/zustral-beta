@@ -1,1 +1,1 @@
-Test that an `if` expression whose branches are literals cannot be the index of a span: its type is `Int32`, as in a `let` annotated with `Index` (issue #158).
+Test that an `if` expression whose branches are literals can be the index of a span: the index reaches both branches, and the literals take the type `Index`, as in a `let` annotated with `Index` (issues #158 and #35).

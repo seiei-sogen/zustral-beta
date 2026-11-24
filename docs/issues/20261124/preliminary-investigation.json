@@ -1,5 +1,5 @@
 {
-  "base_commit": "112222d3f9b7554209edcad2ab4dc9c0b14deb67",
+  "base_commit": "14453ce41d3517db87349e849b402ba06d247953",
   "issues": [
     {
       "number": 33,
@@ -146,8 +146,8 @@
       "title": "if 式の枝に、期待する型が届かない",
       "summary": "if 式の枝に、期待する型を届ける。",
       "depends_on": [],
-      "status": "queued",
-      "reason": "README の「次にやること」の4番。リテラルと型の流れの残り。"
+      "status": "done",
+      "reason": "PR を立てた。計画は issue-35/fix-plan.adoc。"
     },
     {
       "number": 39,
@@ -528,26 +528,23 @@
     }
   ],
   "next_issue": {
-    "number": 174,
-    "current_behavior": "`--error-format=json` を付けても、次のエラーが平文で出る（直す前のコンパイラで、サブエージェントが1つずつ実行して確かめた）。知らないコマンド、読めないソースファイル、余った引数、形のおかしいフラグ、知らない target-type、2回書いた --error-format、内部エラー（TMPDIR がない、など）。型エラーなどの、コンパイルのエラーは JSON で出る。",
+    "number": 35,
+    "current_behavior": "`let x: Int64 := if c then 1 else 2;` が「Cannot cast to `Int64` from `Int32`」になる（直す前のコンパイラで、サブエージェントが実行して確かめた）。`let x: Float32 := if c then 1.5 else 2.5;`、`let x: Option[Int32] := if c then None() else None();`、`s[if b then 0 else 1]` も、同じ原因でエラーになる。`Int32` なら通る。",
     "related_code": [
-      "cli/Cli.ml: main",
-      "cli/CliEngine.ml: report_and_exit, exec_compile",
-      "cli/CliParser.ml: parse_error_reporting_mode",
-      "lib/Outcome.ml: catch（Zustral_error だけを捕まえる）"
+      "lib/TypeCheckExpr.ml: infer_with_expected, augment_if_expr",
+      "lib/LiteralTyping.ml: literal_matches"
     ],
     "related_tests": [
-      "test-programs/cli/022-type-error-json",
-      "test-programs/cli（平文のエラーのテスト）",
-      "test/UnexecutedWordingTest.ml"
+      "test-programs/suites/036-type-checker-paths/041-expected-type-stops-at-if-expression",
+      "test-programs/suites/016-spans/018",
+      "test-programs/suites/035-literal-forms"
     ],
     "affected_ci_checks": [
       "tools/refactoring/measure.sh の記録",
-      "tools/refactoring/coverage.sh",
-      "tools/refactoring/unexecuted-lines.py"
+      "tools/refactoring/coverage.sh"
     ],
     "risks": [
-      "エラーを報告する所が、Cli.main の1か所になる。CliEngine.exec を呼ぶ側は、エラーを自分で報告する必要がある。呼ぶのは Cli.main だけである。"
+      "枝の型が食い違うプログラムの、エラーの文面が変わる（「Cannot cast」から「The branches of the if-expression have different types」へ）。"
     ]
   }
 }

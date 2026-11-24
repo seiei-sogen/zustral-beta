@@ -1,0 +1,23 @@
+import Lib (Mode as Md, Up, Down, find);
+
+module body Test is
+    function main(): ExitCode is
+        let c: Bool := false;
+        let m: Md := Up();
+        let n: Md := if c then m else Down();
+        case n of
+            when Up do
+                printLn("up");
+            when Down do
+                printLn("down");
+        end case;
+        let found: Option[Md] := if c then None() else find();
+        case found of
+            when Some(value: Md) do
+                printLn("found");
+            when None do
+                printLn("none");
+        end case;
+        return ExitSuccess();
+    end;
+end module body.

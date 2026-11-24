@@ -1,7 +1,8 @@
 module body Test is
     function main(): ExitCode is
         let c: Bool := true;
-        let x: Option[Int32] := if c then None() else None();
+        let x: Int8 := if c then 1 else 300;
+        printLn(x);
         return ExitSuccess();
     end;
 end module body.

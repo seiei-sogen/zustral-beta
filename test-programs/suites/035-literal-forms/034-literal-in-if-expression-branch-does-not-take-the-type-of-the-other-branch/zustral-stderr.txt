@@ -1,0 +1,24 @@
+{
+  "module": "Test",
+  "kind": "Type Error",
+  "text": [
+    { "type": "text", "content": "The branches of the " },
+    { "type": "code", "content": "if" },
+    { "type": "text", "content": "-expression have different types: " },
+    { "type": "type", "content": "Int32" },
+    { "type": "text", "content": " and " },
+    { "type": "type", "content": "Int64" }
+  ],
+  "span": {
+    "filename": "test-programs/suites/035-literal-forms/034-literal-in-if-expression-branch-does-not-take-the-type-of-the-other-branch/Test.zum",
+    "startp": { "line": 5, "column": 8 },
+    "end": { "line": 5, "column": 43 }
+  },
+  "context": [
+    [ 3, "        let c: Bool := true;" ],
+    [ 4, "        let a: Int32 := 1;" ],
+    [ 5, "        let x: Int64 := if c then a else 2;" ],
+    [ 6, "        printLn(x);" ],
+    [ 7, "        return ExitSuccess();" ]
+  ]
+}
