@@ -4,8 +4,10 @@
   "text": [
     { "type": "text", "content": "The type parameter " },
     { "type": "code", "content": "U" },
-    { "type": "text", "content": " of " },
+    { "type": "text", "content": " of the instance of the typeclass " },
     { "type": "code", "content": "Show" },
+    { "type": "text", "content": " for " },
+    { "type": "type", "content": "Box[U]" },
     { "type": "text", "content": " is constrained by " },
     { "type": "code", "content": "Missing" },
     {

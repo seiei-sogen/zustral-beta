@@ -21,7 +21,7 @@ lib/Common.ml	71	0	0	0	0	0	3	0	0	0	0
 lib/Compiler.ml	154	0	0	0	0	0	0	0	0	0	0
 lib/Cst.ml	175	0	0	0	0	0	2	0	0	0	0
 lib/CstUtil.ml	202	7	0	0	0	0	0	0	0	0	0
-lib/DeclarationErrors.ml	525	0	0	0	0	0	3	0	0	0	0
+lib/DeclarationErrors.ml	536	0	0	0	0	0	3	0	0	0	0
 lib/DesugarBorrows.ml	269	1	0	0	0	0	0	0	0	0	0
 lib/DesugarPaths.ml	151	0	0	0	0	0	0	0	0	0	0
 lib/DesugaringPass.ml	44	0	0	0	0	0	0	0	0	0	0
@@ -41,7 +41,7 @@ lib/EvaluationOrderOfStatement.ml	78	0	0	0	0	0	0	0	0	0	0
 lib/EvaluationOrderSteps.ml	33	0	0	0	0	0	0	0	0	0	0
 lib/ExportInstantiation.ml	30	0	0	0	0	0	0	0	0	0	0
 lib/ExternalNameCheck.ml	17	2	0	0	0	0	0	0	0	0	0
-lib/ExtractionPass.ml	633	17	0	0	0	0	0	0	0	0	0
+lib/ExtractionPass.ml	648	18	0	0	0	0	0	0	0	0	0
 lib/ForeignType.ml	138	2	0	0	0	0	0	0	0	0	0
 lib/GenericDeclarationCopiedByMonomorph.ml	37	0	0	0	0	0	0	0	0	0	0
 lib/GenericErrors.ml	214	0	0	0	0	0	1	0	0	0	0
@@ -85,10 +85,10 @@ lib/Supply.ml	74	0	0	0	0	0	0	0	0	0	0
 lib/TastUtil.ml	185	3	0	0	0	0	0	0	0	0	0
 lib/Type.ml	288	0	0	0	0	1	0	0	0	0	0
 lib/TypeBindings.ml	182	3	0	0	0	0	0	1	0	0	0
-lib/TypeCheckExpr.ml	1044	44	0	0	0	1	0	0	0	0	0
-lib/TypeClasses.ml	241	13	0	0	0	0	0	0	0	0	0
-lib/TypeErrors.ml	590	0	0	0	0	0	0	0	0	0	0
-lib/TypeMatch.ml	387	5	0	0	0	0	0	1	0	0	0
+lib/TypeCheckExpr.ml	1040	44	0	0	0	1	0	0	0	0	0
+lib/TypeClasses.ml	240	13	0	0	0	0	0	0	0	0	0
+lib/TypeErrors.ml	611	0	0	0	0	0	0	0	0	0	0
+lib/TypeMatch.ml	391	5	0	0	0	0	0	1	0	0	0
 lib/TypeParameter.ml	36	0	0	0	0	0	0	0	0	0	0
 lib/TypeParameters.ml	61	2	0	0	0	0	0	0	0	0	0
 lib/TypeParser.ml	329	10	0	0	0	2	0	0	0	0	0
@@ -97,6 +97,7 @@ lib/TypeSignature.ml	23	0	0	0	0	0	0	0	0	0	0
 lib/TypeStripping.ml	82	1	0	0	0	0	0	1	0	0	0
 lib/TypeSystem.ml	105	0	0	0	0	0	0	0	0	0	0
 lib/TypeVarSet.ml	16	0	0	0	0	0	0	0	0	0	0
+lib/TypeclassMethodMentionsTypeclassParameter.ml	37	1	0	0	0	0	0	0	0	0	0
 lib/TypeclassNamedByConstraint.ml	26	0	0	0	0	0	0	0	0	0	0
 lib/TypingPass.ml	836	36	0	0	0	1	0	0	0	0	0
 lib/Util.ml	105	0	0	0	0	1	0	0	0	0	0

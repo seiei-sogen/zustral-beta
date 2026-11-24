@@ -1,1 +1,1 @@
-Test that the type parameters in a generic instance can't overlap with the method typarams.
+Test that the type parameters in a generic instance can't overlap with the method typarams. The instance is for `Box[U]`, so that its argument names its type parameter: an instance for `Nat8`, which this test had before, is rejected first since issue #175.

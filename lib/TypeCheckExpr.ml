@@ -196,11 +196,7 @@ let make_substs (place: place) (bindings: type_bindings) (typarams: typarams): t
     | RegionUniverse ->
        Some (tp, RegionTy static_region)
     | FreeUniverse | LinearUniverse | TypeUniverse ->
-       (match get_binding bindings tp with
-        | Some ty ->
-           Some (tp, ty)
-        | None ->
-           None)
+       Option.map (fun (ty: ty) -> (tp, ty)) (get_binding bindings tp)
   in
   bindings_from_list place (List.filter_map f (typarams_as_list typarams))
 

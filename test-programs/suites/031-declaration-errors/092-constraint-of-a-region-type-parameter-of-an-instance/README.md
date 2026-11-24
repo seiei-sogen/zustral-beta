@@ -1,0 +1,1 @@
+Test that a type parameter of the `Region` universe of a generic instance cannot have a constraint (issue #175), like one of a function (031/091). The error is where the instance is declared, and names the instance by its typeclass and its argument. Before, the declaration passed.
