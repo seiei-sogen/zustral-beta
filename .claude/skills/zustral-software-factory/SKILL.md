@@ -1,5 +1,5 @@
 ---
-name: stral-software-factory
+name: zustral-software-factory
 description: The Stral Software Factory。issue を1件ずつ、事前調査、計画、セルフレビュー、実装、コードレビュー、PR、CI が通ったらマージ、と回して次の issue へ進む。issue をこのファクトリーで片付けるよう頼まれたときに使う。
 ---
 
@@ -13,7 +13,7 @@ issue を1件ずつ直してマージし、次の issue へ進む。扱う issue
 
 計画と実行は、pstack の poteto-mode で行う。始める前に、Skill ツールで `pstack:poteto-mode` を呼ぶ。
 手順3から6は、issue に合う poteto-mode の playbook（Bug fix、Feature、Refactoring など）に従って進め、その計画を `fix-plan.adoc` に書く。
-PR とマージは、poteto-mode の Opening a PR、Babysit、Shipping ではなく、このスキルの手順7と8に従う。
+PR とマージは、poteto-mode の Opening a PR、Babysit、Shipping ではなく、このスキルの手順8と9に従う。
 
 ## 置き場
 
@@ -130,10 +130,20 @@ high --fix origin/master...HEAD plus uncommitted changes
 gh api repos/seiei-sogen/zustral-beta/issues -f title='…' -F body=@<本文のファイル>
 ```
 
-### 7. PR を立てる
+### 7. 進み具合を記録する
 
-JSON の `next` を `done` にし、残りを日本語でコミットして push し、PR を立てる。
-`done` を PR の前のコミットに入れるのは、記録のためだけに CI をもう1周回さないためである。
+この PR がマージされた後の状態として、次の2つを書き直す。
+PR を立てる前のコミットに入れるのは、記録のためだけに CI をもう1周回さないためである。
+
+- JSON の `next` を `done` にする。
+- `README.md` の「いまの進み具合と、次にやること」節。いまの書き方に合わせて、次のように直す。
+  - 冒頭の「… の時点の状態である」の日付を、今日にする。
+  - 「終わったこと」には、この実行の項目を1つ置き、`docs/issues/<日付>/` にリンクする。直した issue は、その項目に書き足す。
+  - 「次にやること」から、直した issue を消す。JSON に残る issue、`skipped` のうち判断が要る issue、手順6で立てた issue を、進める順に書く。
+
+### 8. PR を立てる
+
+残りを日本語でコミットして push し、PR を立てる。
 
 ```bash
 gh api repos/seiei-sogen/zustral-beta/pulls -f base=master -f head=<ブランチ> \
@@ -148,7 +158,7 @@ gh api repos/seiei-sogen/zustral-beta/pulls -f base=master -f head=<ブランチ
 - 手順5の検査の結果。
 - コードレビューで直したことと、立てた issue。
 
-### 8. CI が通ったらマージする
+### 9. CI が通ったらマージする
 
 CI を待つ。クラウド環境では `subscribe_pr_activity` で PR を購読してターンを終え、CI の通知で再開する。手元では `gh pr checks <PR 番号> --watch` で待つ。
 
