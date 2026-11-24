@@ -121,7 +121,9 @@ module Zustral.Pervasive is
 
     typeclass Printable(A: Free) is
         method print(value: A): Unit;
+    end;
 
+    typeclass PrintableSpanElement(A: Free) is
         generic [R: Region]
         method printSpan(value: Span[A, R]): Unit;
     end;
@@ -141,7 +143,9 @@ module Zustral.Pervasive is
     instance Printable(Float32);
     instance Printable(Float64);
 
-    generic [B: Free(Printable), R: Region]
+    instance PrintableSpanElement(Nat8);
+
+    generic [B: Free(PrintableSpanElement), R: Region]
     instance Printable(Span[B, R]);
 
     generic [T: Free(Printable)]

@@ -471,7 +471,7 @@ Decimal の正準の表記は1つである。
 - `print(x)` と `printLn(x)` は、正準の表記を stdout に出す。
 - `Printable` を制約に持つ汎用の関数に、Decimal を渡せる。
 - 利用者は、`Printable` のインスタンスを Decimal の型に宣言できない。
-- `printSpan` は、整数型のインスタンスと同じ動きにする。今は何も出力しない（issue #60）。
+- Decimal のスパンは、`print` できない。スパンは、要素を1文字ずつ並べた文字列として出力するので、`print` できるのは `Nat8` のスパンだけである。その要素の型クラス `PrintableSpanElement` のインスタンスを、Decimal の型は持たない（issue #60）。
 - `printLn(1.50)` は、Decimal ではなく `Float64` を出力する。`printLn` の引数は型変数なので、型が届かないためである。
 
 出力先は stdout だけである。バイト列へ書き出す演算は、まだない（issue #64）。

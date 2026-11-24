@@ -1,0 +1,22 @@
+{
+  "module": "Test",
+  "kind": "Type Error",
+  "text": [
+    { "type": "text", "content": "The typeclass " },
+    { "type": "code", "content": "Printable" },
+    { "type": "text", "content": " has no instance which matches for " },
+    { "type": "type", "content": "Span[Int32, R]" }
+  ],
+  "span": {
+    "filename": "test-programs/suites/030-type-errors/124-print-of-a-span-of-integers/Test.zum",
+    "startp": { "line": 4, "column": 8 },
+    "end": { "line": 4, "column": 23 }
+  },
+  "context": [
+    [ 2, "    generic [R: Region]" ],
+    [ 3, "    function show(numbers: Span[Int32, R]): Unit is" ],
+    [ 4, "        print(numbers);" ],
+    [ 5, "        return nil;" ],
+    [ 6, "    end;" ]
+  ]
+}

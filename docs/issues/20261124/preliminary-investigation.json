@@ -1,5 +1,5 @@
 {
-  "base_commit": "ca3c0e5c26be75d9582ad89b4ede17394a528342",
+  "base_commit": "c854994438d6c978457d9ea8b4fc692501dd0761",
   "issues": [
     {
       "number": 33,
@@ -30,8 +30,8 @@
       "title": "`Printable` の `printSpan` が、`Nat8` 以外の型では何も出力しない",
       "summary": "printSpan を Printable から外す。規則を緩めるか、Nat8 だけが実装する型クラスを足すかを決める。",
       "depends_on": [],
-      "status": "queued",
-      "reason": "README の「次にやること」の2番。判断が要る issue。"
+      "status": "done",
+      "reason": "PR を立てた。Nat8 だけが実装する型クラス PrintableSpanElement を足すと判断した。計画は issue-60/fix-plan.adoc。"
     },
     {
       "number": 179,
@@ -472,23 +472,18 @@
     }
   ],
   "next_issue": {
-    "number": 176,
-    "current_behavior": "issue の再現のプログラム（汎用の関数 `grow` が `Option[T]` で自分を呼ぶ）で、`timeout 10 zustral compile G.zum --entrypoint=G:main --target-type=c --output=g.c` が終了コード 124 で打ち切られる（3d2905f で実行して確かめた）。同じく打ち切られる形が、ほかに4つある。汎用のインスタンスのメソッドが `Box[Box[U]]` で自分を呼ぶ形、汎用のレコードや union が `Pointer[Chain[Option[T]]]` のスロットを持つ形、汎用の関数が `Option[T]` と `Box[T]` で自分を2回呼ぶ形、汎用の関数が `Pair[T, T]` で自分を呼ぶ形である。",
+    "number": 60,
+    "current_behavior": "`Span[Int32, R]` を `print` する汎用の関数が、型検査を通る（`zustral compile … --target-type=c` が終了コード 0。実行して確かめた）。`lib/builtin/Pervasive.zum` で、`Nat8` のほかの 13 個の型の `printSpan` は `return nil;` だけである。",
     "related_code": [
-      "lib/Monomorphize.ml: instantiate_monomorphs_until_exhausted, instantiate_monomorphs",
-      "lib/Env.ml: 具体化の表（MonomorphsById）",
-      "lib/GenericErrors.ml: render"
+      "lib/builtin/Pervasive.zui: typeclass Printable",
+      "lib/builtin/Pervasive.zum: Printable のインスタンス（14 個の型と Span[B, R]）"
     ],
     "related_tests": [
-      "test-programs/suites/034-early-and-late-stage-errors（単相化の段のエラーを置くスイート）"
+      "test-programs/suites/008-typeclasses/022-orphan-instance-for-built-in-type"
     ],
-    "affected_ci_checks": [
-      "tools/refactoring/measure.sh の記録（ファイルの数と行数）",
-      "エラーメッセージにテストがあること（新しい文面）",
-      "tools/refactoring/coverage.sh（宣言の名前を返す関数の4つの枝）"
-    ],
+    "affected_ci_checks": [],
     "risks": [
-      "終わるプログラムでも、同じ宣言が、深くなる型引数で 8 回続けて自分を使うと断られる。深い型のために別々に書いたインスタンスを 8 個たどる場合だけで、リポジトリのプログラムにはない（スイート、標準ライブラリ、例が通る）。"
+      "`Nat8` でない要素のスパンを `print` していたプログラムが、通らなくなる。リポジトリの中にはない（全検査が通る）。そういうプログラムは、これまでも何も出力していなかった。"
     ]
   }
 }

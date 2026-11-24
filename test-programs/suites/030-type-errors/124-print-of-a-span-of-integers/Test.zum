@@ -1,0 +1,11 @@
+module body Test is
+    generic [R: Region]
+    function show(numbers: Span[Int32, R]): Unit is
+        print(numbers);
+        return nil;
+    end;
+
+    function main(): ExitCode is
+        return ExitSuccess();
+    end;
+end module body.

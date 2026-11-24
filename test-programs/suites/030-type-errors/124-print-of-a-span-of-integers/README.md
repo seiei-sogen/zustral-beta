@@ -1,0 +1,1 @@
+Test that `print` of a span of `Int32` is a type error (issue #60). A span prints as text, one character for each element, so only a span of `Nat8` is printable: `Nat8` alone has an instance of `PrintableSpanElement`. Before, `printSpan` was a method of `Printable`, the instance of every other type printed nothing, and this program compiled.
