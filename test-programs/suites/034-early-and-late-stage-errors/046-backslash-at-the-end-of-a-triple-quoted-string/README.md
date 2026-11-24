@@ -1,0 +1,1 @@
+Test that a backslash that ends a string is an error. A triple-quoted string loses its last line break, so a backslash at the end of its last line is the last character of the string. Before, the compiler wrote the backslash into the C string as it was.

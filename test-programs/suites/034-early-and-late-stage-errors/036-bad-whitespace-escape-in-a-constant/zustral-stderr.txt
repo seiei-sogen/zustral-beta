@@ -4,8 +4,8 @@
   "text": [ { "type": "text", "content": "Bad whitespace escape sequence" } ],
   "span": {
     "filename": "test-programs/suites/034-early-and-late-stage-errors/036-bad-whitespace-escape-in-a-constant/Test.zum",
-    "startp": { "line": 2, "column": 4 },
-    "end": { "line": 2, "column": 45 }
+    "startp": { "line": 2, "column": 38 },
+    "end": { "line": 2, "column": 44 }
   },
   "context": [
     [ 1, "module body Test is" ],

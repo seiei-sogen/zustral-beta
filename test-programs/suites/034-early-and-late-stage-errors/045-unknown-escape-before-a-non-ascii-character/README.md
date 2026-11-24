@@ -1,0 +1,1 @@
+Test that the error for a backslash before a character of more than one byte (`\é`) names the whole character. Before, the message had only the first byte of the character, and the JSON of the error was not UTF-8.

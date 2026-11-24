@@ -36,6 +36,7 @@ type t =
   | TypeWrongArity of { typename: identifier; expected: int; actual: int option }
   | BorrowExpressionNotAllowed
   | BadWhitespaceEscape
+  | UnknownEscapeSequence of string
   | SymbolImportedTwice
   | VariableAlreadyExists of identifier
   | ParameterNotFound
@@ -132,6 +133,23 @@ let render (error: t): err_text =
   | BadWhitespaceEscape ->
      [
        Text "Bad whitespace escape sequence"
+     ]
+  | UnknownEscapeSequence character_after_backslash ->
+     [
+       Code ("\\" ^ character_after_backslash);
+       Text " is not an escape sequence. A string can have ";
+       Code "\\n";
+       Text ", ";
+       Code "\\r";
+       Text ", ";
+       Code "\\t";
+       Text ", ";
+       Code "\\'";
+       Text ", ";
+       Code "\\\"";
+       Text ", ";
+       Code "\\\\";
+       Text ", and whitespace between two backslashes."
      ]
   | SymbolImportedTwice ->
      [

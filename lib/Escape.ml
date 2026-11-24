@@ -25,8 +25,23 @@ and escape_list place lst =
   | ('\\' :: '\n' :: rest) -> consume_whitespace place (' ' :: rest)
   | ('\\' :: '\r' :: rest) -> consume_whitespace place (' ' :: rest)
   | ('\\' :: '\t' :: rest) -> consume_whitespace place (' ' :: rest)
+  | ('\\' :: after_backslash) ->
+     generic_error place (UnknownEscapeSequence (first_utf8_character_of_bytes after_backslash))
   | (head :: rest) -> head :: (escape_list place rest)
   | nil -> nil
+
+(* The first character of the bytes: its first byte and the UTF-8 continuation
+   bytes after it. Empty when the backslash ends the string. *)
+and first_utf8_character_of_bytes (bytes: char list): string =
+  let is_utf8_continuation_byte (byte: char): bool = Char.code byte land 0xC0 = 0x80 in
+  let rec leading_continuation_bytes (rest: char list): char list =
+    match rest with
+    | byte :: rest when is_utf8_continuation_byte byte -> byte :: leading_continuation_bytes rest
+    | _ -> []
+  in
+  match bytes with
+  | first_byte :: rest -> string_implode (first_byte :: leading_continuation_bytes rest)
+  | [] -> ""
 
 and consume_whitespace place lst =
   match lst with
