@@ -599,8 +599,8 @@ module body Standard.Test.Buffer is
         return nil;
     end;
 
-    generic [T: Free, R: Region]
-    function assertNth(ref: &[Buffer[T], R], pos: Index, value: T): Unit is
+    generic [R: Region]
+    function assertNth(ref: &[Buffer[Int32], R], pos: Index, value: Int32): Unit is
         assertTrue(nth(ref, pos) = value, "nth");
         return nil;
     end;

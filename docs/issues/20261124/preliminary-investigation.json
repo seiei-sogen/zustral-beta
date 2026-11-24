@@ -1,5 +1,5 @@
 {
-  "base_commit": "3d2905f3a951ba1da461cc2dd41dc6ab0dab253c",
+  "base_commit": "1b5c48a521e70cba77e7f6e020200569ba66ad71",
   "issues": [
     {
       "number": 33,
@@ -14,8 +14,8 @@
       "title": "レコードどうしの `=` が型検査を通り、C のコンパイルで失敗する",
       "summary": "型変数の値どうしの = を断るかを決める。レコード、union、スパンの = は、もう型エラーになる。",
       "depends_on": [],
-      "status": "queued",
-      "reason": "README の「次にやること」の2番。判断が要る issue。is_comparable の1行と、テストの直し。"
+      "status": "done",
+      "reason": "PR を立てた。型変数の値どうしの比較を、型エラーにすると判断した。計画は issue-125/fix-plan.adoc。"
     },
     {
       "number": 176,
@@ -472,18 +472,22 @@
     }
   ],
   "next_issue": {
-    "number": 33,
-    "current_behavior": "既定の振る舞いは直っている。空の TMPDIR を指定して `zustral compile Ok.zum --entrypoint=Ok:main --output=ok`（成功、終了コード 0）と `zustral compile Bad.zum --entrypoint=Bad:main --output=bad`（型エラー、終了コード 255）を実行したあと、TMPDIR は空のままで、カレントディレクトリには `ok` のほかに何も増えない。`error.html` と `calltree.html` を書くコードは、`lib/`、`cli/`、`bin/` に残っていない（`grep -rn 'error.html\\|calltree' --include=*.ml .` が 0 件）。残る判断は、一時ファイルを残すオプションと `error.html` を出すオプションを足すかである。",
+    "number": 125,
+    "current_behavior": "汎用の関数 `same(a: T, b: T)` の中の `a = b` が型検査を通る。レコードの値で呼ぶと、`zustral compile TV.zum --entrypoint=TV:main --target-type=c --output=tv.c` は終了コード 0 で終わり、`cc -fwrapv tv.c -lm` が `error: invalid operands to binary == (have 'mono_14' {aka 'struct mono_14'} and ...)` で失敗する（3d2905f で実行して確かめた）。レコード、union、スパン、参照、領域の `=` は、もう型エラーになる（030-type-errors の 112、116、118 から 122）。",
     "related_code": [
-      "cli/CliEngine.ml: 生成した C の一時ファイルを Fun.protect で消す箇所（171 行から）",
-      ".gitignore: `error.html` の行"
+      "lib/TypeSystem.ml: is_comparable",
+      "lib/TypeCheckExpr.ml: augment_comparison"
     ],
     "related_tests": [
-      "test-programs/cli/047-html-characters-in-file-name（README が error.html に触れる）"
+      "test-programs/suites/036-type-checker-paths/061-values-of-comparable-types-compare",
+      "test-programs/suites/030-type-errors/112、116、118 から 122",
+      "standard/test/Buffer.zum: assertNth"
     ],
-    "affected_ci_checks": [],
+    "affected_ci_checks": [
+      "tools/refactoring/measure.sh の記録（lib/TypeSystem.ml の行数）"
+    ],
     "risks": [
-      "オプションを足さないと決めるので、issue を閉じる根拠が判断だけになる。所有者が違う判断をしたら、issue を開き直す。"
+      "型変数の値を比べていた利用者のプログラムが、通らなくなる。リポジトリの中では、テスト 036/061 と standard/test/Buffer.zum の2か所だけである（型変数を断るコンパイラで、スイート、標準ライブラリ、例を通して確かめた）。"
     ]
   }
 }

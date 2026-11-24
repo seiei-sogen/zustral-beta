@@ -43,11 +43,12 @@ let is_numeric = function
   | Pointer _ -> false
   | FnPtr _ -> false
 
-(* A type variable stays comparable until issue #125 decides on it. *)
+(* A type variable is not comparable: a generic function must compile for every
+   type argument, and a record or a union can be one (issue #125). *)
 let is_comparable = function
-  | Unit | Boolean | Integer _ | SingleFloat | DoubleFloat | Address _ | Pointer _ | FnPtr _ | TyVar _ ->
+  | Unit | Boolean | Integer _ | SingleFloat | DoubleFloat | Address _ | Pointer _ | FnPtr _ ->
      true
-  | NamedType _ | RegionTy _ | ReadRef _ | WriteRef _ | Span _ | SpanMut _ ->
+  | NamedType _ | RegionTy _ | ReadRef _ | WriteRef _ | Span _ | SpanMut _ | TyVar _ ->
      false
 
 let rec type_variables = function

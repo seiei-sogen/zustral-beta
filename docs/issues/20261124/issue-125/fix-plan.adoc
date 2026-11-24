@@ -1,0 +1,85 @@
+= issue #125 の修正計画: 型変数の値どうしの `=` を断る
+
+== 目的
+
+issue #125 は、比べられない型の値どうしの `=` が型検査を通り、C のコンパイルで失敗することを報告している。
+レコード、union、スパン、参照、領域の `=` は、PR #170 で型エラーになった。
+残っているのは、型変数の値どうしの `=` を断るかの判断である。
+
+終わりの条件は、型検査を通ったプログラムが、`=` のせいで C のコンパイルに失敗しないことである。
+
+== 判断
+
+*型変数の値どうしの比較（`=`、`/=`、`<` など）を、型エラーにする。*
+
+* 受けたままでは、型検査を通ったプログラムが、C のコンパイルで失敗する。型引数がレコードのときである。再現は「現状」の節にある。
+* 単相化の後で検査する案は、採らない。汎用の関数が、型引数によってコンパイルできたりできなかったりするからである。型変数の位置のリテラルで、同じ判断をしている（`docs/plan.md` の L 節の「結果」）。
+* 汎用のコードで値を比べる方法は、`Equality` の型クラスである（issue #44）。インスタンスが足りないのは、#44 で直す。
+
+所有者の代わりに選んだ既定である。違う判断にするときは、この PR を取り消して、issue を開き直す。
+
+== 現状
+
+`origin/master`（`3d2905f`）で確かめた。
+
+[source]
+----
+generic [T: Free]
+function same(a: T, b: T): Bool is
+    return a = b;
+end;
+----
+
+`same(a, b)` をレコード `R` の値で呼ぶプログラムは、`zustral compile TV.zum --entrypoint=TV:main --target-type=c --output=tv.c` が終了コード 0 で終わり、`cc -fwrapv tv.c -lm` が次のエラーで失敗する。
+
+----
+tv.c:4947:15: error: invalid operands to binary == (have 'mono_14' {aka 'struct mono_14'} and 'mono_14' {aka 'struct mono_14'})
+----
+
+関係するコードとテストは次のとおりである。
+
+* `lib/TypeSystem.ml` の `is_comparable`: 型変数を、比べられる型に数えている。コメントに「issue #125 が決めるまで」とある。
+* `lib/TypeCheckExpr.ml` の `augment_comparison`: `is_comparable` が偽なら `ComparisonOperandNotComparable` を出す。
+* `test-programs/suites/036-type-checker-paths/061-values-of-comparable-types-compare`: 型変数の比較が通ることを固定している。
+* `standard/test/Buffer.zum` の `assertNth`: `T: Free` の値を `=` で比べる。呼び出しは、すべて `Buffer[Int32]` である。
+
+型変数を断るコンパイラを試しに作って、スイート、コマンドラインのテスト、標準ライブラリ、例を通した。通らなくなったのは、上の2つだけである。
+
+== 変更
+
+* `lib/TypeSystem.ml` の `is_comparable`: `TyVar` を、比べられない側へ移す。
+* `test-programs/suites/036-type-checker-paths/061-values-of-comparable-types-compare`: 型変数の比較を外す。
+* `standard/test/Buffer.zum` の `assertNth`: `Buffer[Int32]` と `Int32` を受ける関数にする。
+
+新しいファイルは、テストだけである。
+
+== テスト
+
+最初に書く、失敗するテスト: `test-programs/suites/030-type-errors/123-values-of-a-type-parameter-are-not-comparable`。
+汎用の関数の中の `a = b`（`a` と `b` は `T`）が、関数の位置で型エラーになる。呼び出しは `Int32` を渡す。型引数が比べられる型でも断ることを固定する。
+
+== 確認
+
+* 計測値: `lib/TypeSystem.ml` のコメントが1行増える。`measure.sh --record` で記録し直す。
+* エラーメッセージのテスト: 文面は増えない。`ComparisonOperandNotComparable` を使う。
+* カバレッジ: 行は増えない。
+
+== 範囲外
+
+* `Equality` と `Order` のインスタンスを足すこと（issue #44）。
+* 順序の比較と等しさの比較で、受ける型を分けること。いまは、同じ型を受ける。
+
+== セルフレビュー
+
+issue の本文に照らして見直した。
+
+* 「`augment_comparison` で、両辺の型が比べられる型かを検査する」: PR #170 で入っている。この PR は、型変数を比べられない側へ移す。
+* 「順序の比較と等しさの比較で、受ける型を分けるかどうかも決める」: 分けない。比べられる型は、どれも C の `<` を受ける型である。関数ポインタとアドレスの順序の比較は、C で書けるので、いまのままにする。範囲外に書いた。
+* 呼び出し元: `is_comparable` を呼ぶのは `augment_comparison` だけである（`grep -rn is_comparable lib`）。
+* 見直しで足したこと: 新しいテストの呼び出しを、レコードではなく `Int32` にした。型引数によらず断ることを固定するためである。
+
+== 実装の記録
+
+* 新しいテストの期待する出力は、最初は手で書いた。書式が、ランナーの比べる書式と違っていた。エラーの内容は合っていたので、直したコンパイラの出力で置き換えた。
+* `tools/refactoring/run-every-ci-check-locally.sh` の 14 個の検査は、すべて `ok` だった。
+* 再現のプログラムは、8 行目の `a = b` で「Values of the type `T` cannot be compared.」になる（終了コード 255）。
