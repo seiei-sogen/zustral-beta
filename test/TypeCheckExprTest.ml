@@ -143,8 +143,48 @@ let test_annotation _ =
     (Some (Type (CastInvalid { target = Boolean; source = int32 })))
     (error_of (fun () -> TypeCheckExpr.check_annotated ctx x Boolean))
 
+(* The type checker reads how a literal was written (issue #38), also under a
+   `-`, which the abstraction pass reads into the literal
+   (LiteralTyping.negation_of_operand). The passes between the abstraction
+   pass and the type checker leave a literal as it is. *)
+let checked_literal_of_text (text: string) (ty: ty): texpr =
+  let imports: Imports.import_map = Imports.empty_map example SafeModule in
+  match AbstractionPass.abs_expr NoSpan imports (ParserInterface.parse_expr text) with
+  | Stages.Ast.IntConstant literal -> TypeCheckExpr.check ctx (IntConstant literal) ty
+  | Stages.Ast.FloatConstant literal -> TypeCheckExpr.check ctx (FloatConstant literal) ty
+  | _ -> assert_failure (text ^ " is not a literal after the abstraction pass")
+
+let test_literal_form_reaches_the_type_checker _ =
+  let int64: ty = Integer (Signed, Width64) in
+  let check_int (text: string) (written: string) (radix: NumberLiteral.radix) (value: int) =
+    match checked_literal_of_text text int64 with
+    | TIntConstant literal ->
+       assert_equal ~msg:text written literal.written;
+       assert_equal ~msg:text radix literal.radix;
+       assert_equal ~msg:text ~cmp:Z.equal (Z.of_int value) literal.value
+    | _ -> assert_failure (text ^ " is not an integer literal to the type checker")
+  in
+  check_int "#xFF" "#xFF" Hexadecimal 255;
+  check_int "-#xFF" "-#xFF" Hexadecimal (-255);
+  check_int "-(-#xFF)" "#xFF" Hexadecimal 255;
+  check_int "-#b101" "-#b101" Binary (-5);
+  check_int "-#o17" "-#o17" Octal (-15);
+  check_int "-'a'" "-'a'" Character (-97);
+  check_int "-1'000" "-1'000" Decimal (-1000);
+  let check_float (text: string) (written: string) (fraction_digits: int) (has_exponent: bool) =
+    match checked_literal_of_text text DoubleFloat with
+    | TFloatConstant literal ->
+       assert_equal ~msg:text written literal.written;
+       assert_equal ~msg:text fraction_digits literal.fraction_digits;
+       assert_equal ~msg:text has_exponent literal.has_exponent
+    | _ -> assert_failure (text ^ " is not a float literal to the type checker")
+  in
+  check_float "-1.50" "-1.50" 2 false;
+  check_float "-1.5e3" "-1.5e3" 1 true
+
 let suite =
   "TypeCheckExpr" >::: [
+      "the form of a literal reaches the type checker" >:: test_literal_form_reaches_the_type_checker;
       "a literal" >:: test_literal;
       "a variable" >:: test_variable;
       "a call through a function pointer" >:: test_function_pointer_call;

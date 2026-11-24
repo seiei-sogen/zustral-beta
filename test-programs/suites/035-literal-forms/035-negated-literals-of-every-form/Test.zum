@@ -1,0 +1,32 @@
+module body Test is
+    constant c: Int32 := -#xFF;
+
+    function same(value: Int32): Int32 is
+        return value;
+    end;
+
+    function main(): ExitCode is
+        let a: Int32 := -#xFF;
+        printLn(a);
+        let b: Int32 := -#b101;
+        printLn(b);
+        let d: Int32 := -#o17;
+        printLn(d);
+        let e: Int32 := -'a';
+        printLn(e);
+        let f: Int32 := -1'000;
+        printLn(f);
+        let g: Int32 := -(-#xFF);
+        printLn(g);
+        let h: Int8 := -#x80;
+        printLn(h);
+        printLn(c);
+        printLn(same(-#x10));
+        let i: Int64 := if true then -#x10 else 0;
+        printLn(i);
+        printLn(-#x10 + a);
+        let j: Float64 := -1.50;
+        printLn(j);
+        return ExitSuccess();
+    end;
+end module body.

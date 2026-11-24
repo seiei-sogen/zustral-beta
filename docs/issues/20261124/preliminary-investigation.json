@@ -1,5 +1,5 @@
 {
-  "base_commit": "14453ce41d3517db87349e849b402ba06d247953",
+  "base_commit": "889ef44a2771ae1e128e2d66822f432c85fe55be",
   "issues": [
     {
       "number": 33,
@@ -128,8 +128,8 @@
       "title": "リテラルの形（16進、文字など）が、型検査に届かない",
       "summary": "リテラルの形（16進、文字など）を、型検査まで運ぶ。",
       "depends_on": [],
-      "status": "queued",
-      "reason": "README の「次にやること」の4番。リテラルと型の流れの残り。"
+      "status": "done",
+      "reason": "PR を立てた。計画は issue-38/fix-plan.adoc。"
     },
     {
       "number": 37,
@@ -528,23 +528,22 @@
     }
   ],
   "next_issue": {
-    "number": 35,
-    "current_behavior": "`let x: Int64 := if c then 1 else 2;` が「Cannot cast to `Int64` from `Int32`」になる（直す前のコンパイラで、サブエージェントが実行して確かめた）。`let x: Float32 := if c then 1.5 else 2.5;`、`let x: Option[Int32] := if c then None() else None();`、`s[if b then 0 else 1]` も、同じ原因でエラーになる。`Int32` なら通る。",
+    "number": 38,
+    "current_behavior": "リテラルの形（基数、文字、書いた文字列、小数部の桁数、指数の有無）の記録は、R18（#111）で入っていて、構文解析から型検査まで届く。届かないのは、`-` を付けたリテラルだけである。`-#xFF` が、型検査には 10 進の `-255` として届く（単体テストで確かめた。サブエージェント）。プログラムの出力は、直す前も後も同じである。",
     "related_code": [
-      "lib/TypeCheckExpr.ml: infer_with_expected, augment_if_expr",
-      "lib/LiteralTyping.ml: literal_matches"
+      "lib/LiteralTyping.ml: negation_of_operand",
+      "lib/NumberLiteral.ml: of_value, negated_float"
     ],
     "related_tests": [
-      "test-programs/suites/036-type-checker-paths/041-expected-type-stops-at-if-expression",
-      "test-programs/suites/016-spans/018",
+      "test/TypeCheckExprTest.ml",
       "test-programs/suites/035-literal-forms"
     ],
     "affected_ci_checks": [
       "tools/refactoring/measure.sh の記録",
-      "tools/refactoring/coverage.sh"
+      "base ブランチとの等価性（生成する C が変わらないこと）"
     ],
     "risks": [
-      "枝の型が食い違うプログラムの、エラーの文面が変わる（「Cannot cast」から「The branches of the if-expression have different types」へ）。"
+      "リテラルだけの式（`#x10 + 1`）は、型検査より前に畳み込まれて、10 進の 17 として届く。これは #37 で直す。"
     ]
   }
 }
