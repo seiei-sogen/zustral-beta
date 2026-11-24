@@ -1,0 +1,108 @@
+= issue #174 の修正計画: `--error-format=json` を付けたら、どのエラーも JSON で出す
+
+== 目的
+
+issue #174 は、`--error-format=json` を付けても、コンパイラの内部エラーと、コマンドラインのエラーが平文で出ることを報告している。
+エラーを JSON で受け取る道具は、これらを解釈できない。
+issue は、引数の解析そのものに失敗した場合の扱いを決めることも求めている。
+
+終わりの条件は、`--error-format=json` を付けたとき、コンパイラが出すどのエラーも JSON で出ることである。引数の解析に失敗した場合も含む。
+
+== 判断
+
+*引数のどこかに `--error-format=json` があれば、どのエラーも JSON で出す。*
+
+* 決める材料は、解析する前の引数の文字列である。最初の引数（実行ファイルの名前）は数えない。`CliUtil.parse_args` と同じである。
+* 解析の前に決めるので、解析の失敗も、この形式で出る。知らないコマンド、知らないフラグ、`--a=b=c` のような形の悪いフラグ、`--error-format` を2回与えた場合も、JSON になる。
+* 引数のどこにあってもよい。コマンドの前に置いた `--error-format=json` は、知らないオプションのエラーになる。そのエラーも JSON で出る。
+* 一致は、引数1つの全体との一致である。`--error-format=JSON` や `--error-format=xml` は一致しない。どちらも、知らない形式のエラーになり、平文で出る。
+* `--error-format=json` と `--error-format=plain` を両方与えると、2回与えたエラーになる。`json` があるので、JSON で出る。
+* 呼び出す側は、引数に `--error-format=json` を入れれば、stderr を JSON として読める、と頼ってよい。
+
+形式を決める所は、この1か所にした。解析した結果（`WholeProgramCompile`）は、もう形式を持たない。パーサは、`--error-format` の値が `plain` か `json` であることだけを確かめる。
+2か所で決めると、片方だけを直したときに、コンパイルのエラーと引数のエラーで、形式が食い違うからである。
+
+所有者の代わりに選んだ規則である。違う規則にするときは、この PR を取り消して、issue を開き直す。
+
+== 現状
+
+`1d6a37d` で確かめた。
+
+* 平文で出るもの:
+** 引数の解析で起きるエラー。知らないコマンド（`zustral nosuchcommand --error-format=json`）、形の悪いフラグ、知らないターゲット、`--error-format` を2回、余った引数、モジュールがない場合などである。
+** 読めないソースファイル（`zustral compile DoesNotExist.zum --target-type=tc --error-format=json`）。
+** 内部エラー。`Outcome.catch` は `Zustral_error` だけを捕まえる。ほかの例外は、コンパイルの途中からも、`Cli.main` まで抜ける。`TMPDIR=/nonexistent zustral compile Hello.zum --entrypoint=Hello:main --output=hello --error-format=json` では、`Filename.temp_file` の `Sys_error` が、平文の `Internal Error` になる。
+* すでに JSON で出るもの: 型のエラーなど、コンパイラが返すエラー。`PATH` がない場合と、出力先に書けない場合も、`Outcome.catch` の中で起きるので、JSON で出る。issue の本文の「`PATH` がない」は、もう直っていた。
+
+原因は、`cli/Cli.ml` の `main` である。受け皿が、いつも `ErrorReportPlain` で報告する。形式は、`WholeProgramCompile` を解析し終えるまで分からない。
+`cli/CliEngine.ml` の `exec_compile` のコメントは、バグが漏らした例外も「求められた形式で」報告すると書いていた。実際は、`Outcome.catch` が捕まえないので、平文だった。
+
+== 変更
+
+* `cli/ErrorReportingModeOfArguments.ml`（新しいファイル）: 型 `error_reporting_mode` を、`cli/CliParser.ml` から移す。`error_reporting_mode_of_arguments` が、上の規則で形式を返す。
+* `cli/RenderExceptionInFormatOfArguments.ml`（新しいファイル）: `render_exception_in_format_of_arguments`。コンパイラを終わらせる例外を、引数の求める形式の文字列にする。中身は、例外が運ぶエラーか、ほかの例外なら、それを名指しする内部エラーである。
+* `cli/Cli.ml`: `main` の受け皿が、この文字列を stderr に書いて、終了コード 255 で終わる。
+* `cli/CliEngine.ml`: `report_and_exit` を消す。`exec_compile` は、コンパイラが返した最初のエラーに、ソースの引用を付けて、`Zustral_error` として投げる。報告するのは、`main` の1か所だけになる。
+* `cli/CliParser.ml`: `WholeProgramCompile` から `error_reporting_mode` を消す。`parse_error_reporting_mode` を `pop_error_format_flag` にする。値を確かめて、フラグを取り除くだけである。
+* `tools/refactoring/unexecuted-lines.py`: 戻らない関数の一覧から、消した `report_and_exit` を除く。
+
+== テスト
+
+最初に書く、失敗するテスト。直す前は、CLI のテストは、どれも平文が出て失敗した。単体テストは、モジュールがないので、ビルドが失敗した。
+
+* `test-programs/cli/053-unknown-command-with-error-format-json-issue-174`: 知らないコマンド。
+* `054-missing-source-file-with-error-format-json-issue-174`: 読めないソースファイル。
+* `055-malformed-flag-with-error-format-json-issue-174`: `--a=b=c`。`--error-format` を読む前に失敗する。
+* `056-error-format-given-twice-issue-174`: `--error-format=json --error-format=plain`。`--error-format` を読む途中で失敗する。
+* `057-error-format-json-before-the-command-issue-174`: コマンドの前の `--error-format=json`。
+* `test/UnexecutedWordingTest.ml` の `test_exception_is_reported_in_the_format_the_arguments_ask_for`: 内部エラーは、プログラムからは起こせない。そこで、`main` が書く文字列を作る関数を、直接呼ぶ。確かめることは次の3つである。
+** `Not_found` が、JSON の `Internal Error` になる。
+** 引用符、バックスラッシュ、ASCII でない文字、制御文字、改行を含む文面が、JSON から元のまま戻る。
+** 実行ファイルの名前だけが `--error-format=json` のときと、引数が1つもないときは、平文になる。
+
+平文のままであることは、既にあるテストが確かめる。`020-unknown-error-format`（`--error-format=xml`）と、`--error-format` を付けない、すべてのテストである。
+
+== 確認
+
+* 計測値: `cli/` にファイルが2つ増える。`measure.sh --record` で記録し直す。`raise` が1つ増え（`exec_compile` の `raise`）、`io` と `wildcard` が1つずつ減る。
+* エラーメッセージのテスト: 文面は増えない。
+* カバレッジ: 規則の2つの枝のうち、引数のある枝は CLI のテストが、引数のない枝は単体テストが実行する。形式の2つの枝は、JSON と平文の CLI のテストが実行する。
+
+== 範囲外
+
+* JSON の出力が、正しい UTF-8 にならないことがある。ファイル名やソースの行に UTF-8 でないバイトがあると、そのバイトがそのまま出る。型のエラーでも、前から同じである。別の issue にする。
+* 一時ディレクトリがないと、内部エラーになること。利用者の環境の問題なので、内部エラーではなく、書き込みのエラーにすべきである。別の issue にする。
+* JSON の最後に改行がないこと。`022-type-error-json` が、いまの形を固定している。
+
+== セルフレビュー
+
+issue の本文に照らして見直した。
+
+* 「内部エラーも JSON で出す」: `TMPDIR=/nonexistent` の再現が、JSON の `Internal Error` になる。プログラムから起こせる内部エラーは、ほかに見つからなかった。単体テストが、`main` の書く文字列を確かめる。
+* 「コマンドラインのエラーも JSON で出す」: issue が挙げる、知らないコマンドと読めないファイルを、テストにした。`PATH` がない場合は、直す前から JSON だった。いまは `exec_compile` から `main` へ投げる道を通る。型のエラーと同じ道なので、`022-type-error-json` が確かめる。
+* 「引数の解析に失敗した場合の扱いを決める」: 「判断」の節にある。`--error-format` を読む前の失敗を 053、055、057 が、読む途中の失敗を 056 が、解析の後の失敗を 054 が確かめる。
+* 呼び出し元: `report_and_exit` を呼んでいたのは、`Cli.main` と `exec_compile` の2か所だけである。どちらも消した。`WholeProgramCompile` の `error_reporting_mode` を読んでいたのは、`exec` と `test/CliParserTest.ml` だけである。
+* `exit 0` は、これまでどおり `try` の中にある。`exit` は例外を投げないので、成功の後に報告が走ることはない。
+
+== 実装の記録
+
+* 計画どおりに実装した。
+* `tools/refactoring/run-every-ci-check-locally.sh` の 14 個の検査は、すべて `ok` だった。
+* 「現状」の再現を、直した後にもう一度実行した。知らないコマンド、読めないファイル、形の悪いフラグ、知らないターゲット、`--error-format` を2回、余った引数、モジュールがない場合、コマンドの前の `--error-format=json`、`TMPDIR=/nonexistent` の内部エラーが、どれも JSON になった。`--error-format=xml` は、平文のままである。終了コードは、どれも 255 で変わらない。
+* 自分の差分を、テストにない入力で試した。`--error-format=json` を付けて、次の出力を、厳密な UTF-8 の復号と `json.loads` で読んだ。
+** 読めないファイルの名前に、引用符とバックスラッシュ、ASCII でない文字（`é漢字`）、制御文字（`\x01`、`\x1f`、`\x7f`）、改行とタブを入れた。どれも正しい JSON だった。
+** 知らないコマンドと知らないオプションの名前に、引用符と制御文字を入れた。形の悪いフラグの値に、制御文字を入れた。どれも正しい JSON だった。
+** 型のエラーの引用の行に、引用符、バックスラッシュ、制御文字、ASCII でない文字を入れた。ファイル名にも、引用符とバックスラッシュを入れた。正しい JSON だった。
+** `TMPDIR` を、引用符と ASCII でない文字を含む、ないディレクトリにした。正しい JSON の `Internal Error` だった。
+** `--help --error-format=json`、`compile --help --error-format=json`、`--error-format=json` を2回。どれも JSON だった。
+** ファイル名とソースの行に、UTF-8 でないバイト（`\xff\xfe`）を入れた。出力は、そのバイトを含み、厳密な UTF-8 として読めなかった。前からある問題で、範囲外にした。
+
+== コードレビューで直したこと
+
+* 書けない stderr で、コンパイルのエラーの終了コードが 255 から 2 に変わっていた。stderr を閉じた場合（`2>&-`）と、空きのないデバイスに向けた場合（`2>/dev/full`）である。
+** 原因: 標準ライブラリの `Format` が、終了のときに stderr を書き出す。書けないと、`exit` が `Sys_error` を投げる。直す前は、コンパイルのエラーを `main` の `try` の中で報告していたので、受け皿がこの例外を捕まえて、もう一度 `exit` していた。この PR で、報告が受け皿の中だけになり、例外を捕まえる所がなくなった。引数のエラーは、前から 2 だった。
+** 修正: `cli/Cli.ml` の `main` の受け皿で、文面を書いた後、`exit` の前に、`close_out_noerr stderr` で stderr を閉じる。閉じるときに文面が書き出され、書けなくても例外にならない。閉じた stderr は、終了のときに書き出されない。枝は増えない。引数のエラーも 255 になった。
+** 残り: stderr のバッファより長い文面（1行が 64 KiB を超えるソースの引用）は、`prerr_string` の中で失敗し、終了コードは 2 のままである。前からこうで、コードのコメントに書いた。
+** テスト: `test-programs/cli/058-type-error-with-stderr-on-the-full-device-issue-174`。直す前は、終了コードが 2 で失敗した。テストのディレクトリに `stderr-is-the-full-device.txt` を置くと、コンパイラの stderr が `/dev/full` になる。`test-programs/cli-runner.py` と `tools/refactoring/equivalence.py` に、この仕組みを足した。
+** 計測値: `cli/Cli.ml` の `io` が1つ増えた（`close_out_noerr`）。記録し直した。
+* 範囲外にした、前からある指摘。`zustral compile --help` の文面が、`--error-format` を載せていない。`--target-type` の値を `bin` と書いているが、コンパイラが受け取るのは `exe` である。別の issue にする。

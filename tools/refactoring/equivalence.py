@@ -45,7 +45,8 @@ STANDARD = ROOT / "standard"
 EXAMPLES = ROOT / "examples"
 CLI_TESTS = ROOT / "test-programs" / "cli"
 CLI_UNSET_VARIABLES = "unset-environment-variables.txt"
-CLI_NOT_INPUTS = {"args.txt", "expected.txt", "README.md", CLI_UNSET_VARIABLES}
+CLI_STDERR_IS_THE_FULL_DEVICE = "stderr-is-the-full-device.txt"
+CLI_NOT_INPUTS = {"args.txt", "expected.txt", "README.md", CLI_UNSET_VARIABLES, CLI_STDERR_IS_THE_FULL_DEVICE}
 FILES = ("exit", "out.c", "stdout", "stderr", "files")
 # The slowest program of the repository compiles in a few seconds.
 SECONDS_A_COMPILER_MAY_TAKE = 60
@@ -144,8 +145,10 @@ def run_one(compiler: str, outdir: pathlib.Path, name: str, words: list[str], in
         # A compiler that does not finish is a behaviour to compare, like an exit status: the
         # base compiler never finishes the programs that test the fix of issue #176.
         try:
-            done = subprocess.run(command, cwd=cwd, env=environment, capture_output=True, timeout=SECONDS_A_COMPILER_MAY_TAKE)
-            status, stdout, stderr = str(done.returncode), done.stdout, done.stderr
+            # A command-line test can ask for a stderr that the compiler cannot write.
+            full = inputs is not None and (inputs / CLI_STDERR_IS_THE_FULL_DEVICE).exists()
+            done = subprocess.run(command, cwd=cwd, env=environment, stdout=subprocess.PIPE, stderr=open("/dev/full", "wb") if full else subprocess.PIPE, timeout=SECONDS_A_COMPILER_MAY_TAKE)
+            status, stdout, stderr = str(done.returncode), done.stdout, done.stderr or b""
         except subprocess.TimeoutExpired:
             status, stdout, stderr = "did not finish", b"", b""
         generated = pathlib.Path(c_path).read_bytes() if os.path.exists(c_path) else b""

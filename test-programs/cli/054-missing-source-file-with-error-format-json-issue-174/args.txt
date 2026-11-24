@@ -1,0 +1,1 @@
+compile DoesNotExist.zum --target-type=tc --error-format=json

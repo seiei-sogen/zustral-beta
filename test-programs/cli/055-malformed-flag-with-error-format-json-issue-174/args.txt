@@ -1,0 +1,1 @@
+compile Hello.zum --a=b=c --error-format=json --target-type=tc

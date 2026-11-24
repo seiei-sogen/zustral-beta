@@ -1,0 +1,1 @@
+Shows that an unknown command is reported in JSON when the arguments hold `--error-format=json` (issue #174). The command is checked before the compiler reads `--error-format`, so the format comes from the rule that any argument `--error-format=json` makes every error JSON.

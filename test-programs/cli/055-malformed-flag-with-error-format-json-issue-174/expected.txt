@@ -1,0 +1,14 @@
+exit: 255
+files: 
+--- stdout
+--- stderr
+{
+  "module": null,
+  "kind": "Command Line Arguments Error",
+  "text": [
+    { "type": "text", "content": "Invalid flag argument " },
+    { "type": "code", "content": "--a=b=c" }
+  ],
+  "span": null,
+  "context": null
+}

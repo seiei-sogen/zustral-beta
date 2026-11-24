@@ -6,13 +6,8 @@
    SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 *)
 (** Executes parsed CLI commands. *)
-open Zustral_core
 open CliParser
-open Error
 
-(** Run a command. Raises [Zustral_error] for errors in the command itself;
-    reports compile errors and exits. *)
+(** Run a command. Raises [Zustral_error] for every error: in the command
+    itself, in reading the source files, and in the compilation. *)
 val exec : cmd -> unit
-
-(** Write the error to stderr, then exit with a failure status. *)
-val report_and_exit : error_reporting_mode -> zustral_error -> 'a

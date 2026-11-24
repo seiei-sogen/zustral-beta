@@ -1,0 +1,15 @@
+exit: 255
+files: 
+--- stdout
+--- stderr
+{
+  "module": null,
+  "kind": "Command Line Arguments Error",
+  "text": [
+    { "type": "text", "content": "The argument " },
+    { "type": "code", "content": "error-format" },
+    { "type": "text", "content": " was given multiple times" }
+  ],
+  "span": null,
+  "context": null
+}

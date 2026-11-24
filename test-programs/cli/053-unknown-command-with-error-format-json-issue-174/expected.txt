@@ -1,0 +1,17 @@
+exit: 255
+files: 
+--- stdout
+--- stderr
+{
+  "module": null,
+  "kind": "Command Line Arguments Error",
+  "text": [
+    { "type": "text", "content": "Unknown command " },
+    { "type": "code", "content": "nosuchcommand" },
+    { "type": "text", "content": ". Run " },
+    { "type": "code", "content": "zustral --help" },
+    { "type": "text", "content": " to see the commands." }
+  ],
+  "span": null,
+  "context": null
+}

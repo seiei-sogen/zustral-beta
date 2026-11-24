@@ -35,8 +35,7 @@ let test_compile_default _ =
                           target = Executable {
                                        bin_path = "out";
                                        entrypoint = Entrypoint (make_mod_name "Foo", make_ident "main")
-                                     };
-                          error_reporting_mode = ErrorReportPlain
+                                     }
                         }
   in
   assert_bool "commands are equal" (cmd = expected)

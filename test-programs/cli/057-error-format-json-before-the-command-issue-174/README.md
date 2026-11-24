@@ -1,0 +1,1 @@
+Shows that `--error-format=json` before the command is an unknown option, and that this error is in JSON all the same (issue #174): any argument `--error-format=json`, wherever it is, makes every error JSON.
