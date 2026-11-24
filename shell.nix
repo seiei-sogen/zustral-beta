@@ -33,6 +33,8 @@ pkgs.mkShell {
     ocamlPackages.dune_3
     ocamlPackages.findlib
     ocamlPackages.odoc
+    # tools/formal-verification/decimal-runtime-128-bit-headroom/ で、Decimal の実行時を検証する。
+    cbmc
 
     # OCaml libraries
     ocamlPackages.yojson
