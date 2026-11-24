@@ -53,7 +53,7 @@ let tyvar (name: string) (universe: universe): ty =
   TyVar (TypeVariable (make_ident name, universe, named "f", [], StandsForItself))
 
 let add_example (env: Env.env): Env.env * Id.mod_id =
-  Env.add_module env { name = example; imported_instances = InstanceIdSet.empty; imported_symbols = [] }
+  Env.add_module env { name = example; body_name_span = span; imported_instances = InstanceIdSet.empty; imported_symbols = [] }
 
 let register_function (env: Env.env) (mod_id: Id.mod_id) (name: string) (params: value_parameter list) (rt: ty) (impl: function_impl): Env.env * Id.function_id =
   Env.register NoSpan env (NewFunction {
@@ -71,6 +71,7 @@ let register_function (env: Env.env) (mod_id: Id.mod_id) (name: string) (params:
 let register_typeclass (env: Env.env) (mod_id: Id.mod_id): Env.env * Id.typeclass_id =
   Env.register NoSpan env (NewTypeClass {
       mod_id;
+      span;
       vis = VisPublic;
       name = make_ident "C";
       docstring;
@@ -83,6 +84,7 @@ let register_typeclass_with_method (env: Env.env) (mod_id: Id.mod_id): Env.env *
   let (env, method_id) =
     Env.register NoSpan env (NewTypeClassMethod {
         mod_id;
+        typeclass_definition_span = span;
         vis = VisPublic;
         typeclass_id;
         name = make_ident "m";
@@ -122,6 +124,7 @@ let register_record (env: Env.env) (mod_id: Id.mod_id) (name: string): Env.env *
   Env.register NoSpan env (NewRecord {
       id;
       mod_id;
+      span;
       vis = TypeVisPublic;
       name = make_ident name;
       docstring;
@@ -169,6 +172,7 @@ let test_lookups_by_an_id_from_a_later_environment _ =
     Env.register NoSpan after (NewUnion {
         id = union_id;
         mod_id;
+        span;
         vis = TypeVisPublic;
         name = make_ident "U";
         docstring;
@@ -269,6 +273,7 @@ let test_a_reserved_id_registered_twice _ =
     NewRecord {
         id;
         mod_id;
+        span;
         vis = TypeVisPublic;
         name = make_ident name;
         docstring;
@@ -317,6 +322,7 @@ let test_only_a_constant_is_a_variable _ =
     Env.register NoSpan env (NewUnion {
         id = union_id;
         mod_id;
+        span;
         vis = TypeVisPublic;
         name = make_ident "U";
         docstring;
@@ -325,10 +331,10 @@ let test_only_a_constant_is_a_variable _ =
       })
   in
   let (env, _) =
-    Env.register NoSpan env (NewUnionCase { mod_id; vis = VisPublic; union_id; name = make_ident "K"; docstring; slots = [] })
+    Env.register NoSpan env (NewUnionCase { mod_id; union_definition_span = span; vis = VisPublic; union_id; name = make_ident "K"; docstring; slots = [] })
   in
   let (env, _) =
-    Env.register NoSpan env (NewConstant { mod_id; vis = VisPublic; name = make_ident "c"; ty = Boolean; docstring })
+    Env.register NoSpan env (NewConstant { mod_id; span; vis = VisPublic; name = make_ident "c"; ty = Boolean; docstring })
   in
   let variable (name: string) = Env.get_variable NoSpan env LexEnv.empty_lexenv (named name) in
   List.iter (fun name -> assert_equal ~msg:name None (variable name)) ["f"; "C"; "m"; "R"; "U"; "K"];
@@ -440,7 +446,7 @@ let test_overlap_of_every_pair_of_kinds _ =
 
 let test_a_region_or_type_variable_is_local_to_no_module _ =
   let (env, mod_id) = add_example Env.empty_env in
-  let (env, other_id) = Env.add_module env { name = make_mod_name "Other"; imported_instances = InstanceIdSet.empty; imported_symbols = [] } in
+  let (env, other_id) = Env.add_module env { name = make_mod_name "Other"; body_name_span = span; imported_instances = InstanceIdSet.empty; imported_symbols = [] } in
   List.iter
     (fun (ty: ty) ->
       assert_equal ~msg:(type_string ty) (Some (Generic BrokenOrphanRule))
@@ -688,6 +694,7 @@ let test_a_struct_before_other_declarations _ =
     Env.register NoSpan env (NewUnion {
         id = union_id;
         mod_id;
+        span;
         vis = TypeVisPublic;
         name = make_ident "U";
         docstring;
@@ -697,7 +704,7 @@ let test_a_struct_before_other_declarations _ =
   in
   let (env, union_mono) = Env.add_or_get_union_monomorph env union_id MonoTypeBindings.empty_mono_bindings in
   let (env, constant_id) =
-    Env.register NoSpan env (NewConstant { mod_id; vis = VisPublic; name = make_ident "c"; ty = Boolean; docstring })
+    Env.register NoSpan env (NewConstant { mod_id; span; vis = VisPublic; name = make_ident "c"; ty = Boolean; docstring })
   in
   let struct_then (decl: mdecl): string list =
     List.map kind (generate env [MRecordMonomorph (first, []); decl])

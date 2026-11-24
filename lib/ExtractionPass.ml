@@ -231,6 +231,7 @@ open Outcome.Syntax
 let rec extract (env: env) (cmodule: combined_module): (env * linked_module) Outcome.t =
   let (CombinedModule {
            name;
+           body_name_span;
            kind;
            interface_docstring;
            interface_imports;
@@ -249,6 +250,7 @@ let rec extract (env: env) (cmodule: combined_module): (env * linked_module) Out
         in
         let input: mod_input = {
             name;
+            body_name_span;
             imported_instances;
             imported_symbols = (imported_symbols interface_imports) @ (imported_symbols body_imports);
           }
@@ -301,7 +303,7 @@ and reserve_definition (env: env) (mod_id: mod_id) (mn: module_name) (def: combi
      let (parse', _, _) = parsers env local_types in
      (let place: place = AtSpan span in
          let ty = parse' place rm empty_typarams typespec in
-         let (env, decl_id) = register place env (NewConstant { mod_id; vis; name; ty; docstring }) in
+         let (env, decl_id) = register place env (NewConstant { mod_id; span; vis; name; ty; docstring }) in
          let decl = LConstant (decl_id, vis, name, ty, def, docstring) in
          (env, decl))))
   | CRecord (span, vis, name, typarams, universe, slots, docstring) ->
@@ -341,7 +343,7 @@ and reserve_definition (env: env) (mod_id: mod_id) (mn: module_name) (def: combi
            | FreeUniverse | LinearUniverse | TypeUniverse ->
               ()
          in
-         let (env, decl_id) = register place env (NewRecord { id; mod_id; vis; name; docstring; typarams; universe; slots }) in
+         let (env, decl_id) = register place env (NewRecord { id; mod_id; span; vis; name; docstring; typarams; universe; slots }) in
          let decl = LRecord (decl_id, vis, name, typarams, universe, slots, docstring) in
          (env, decl))))
   | CUnion (span, vis, name, typarams, universe, cases, docstring) ->
@@ -386,7 +388,7 @@ and reserve_definition (env: env) (mod_id: mod_id) (mn: module_name) (def: combi
               ()
          in
          (* Add the union itself to the env *)
-         let (env, union_id) = register place env (NewUnion { id; mod_id; vis; name; docstring; typarams; universe }) in
+         let (env, union_id) = register place env (NewUnion { id; mod_id; span; vis; name; docstring; typarams; universe }) in
          (* If the union is public, the cases are public, otherwise they are private. *)
          let case_vis: vis =
            match vis with
@@ -399,6 +401,7 @@ and reserve_definition (env: env) (mod_id: mod_id) (mn: module_name) (def: combi
            let docstring = Docstring "" in (* TODO: Store docstrings in slots and cases *)
            {
              mod_id = mod_id;
+             union_definition_span = span;
              vis = case_vis;
              union_id = union_id;
              name = n;
@@ -511,7 +514,7 @@ and reserve_definition (env: env) (mod_id: mod_id) (mn: module_name) (def: combi
               declaration_error place (TypeclassParamIsRegion name)
          in
          (* Add the typeclass itself to the env *)
-         let (env, typeclass_id) = register place env (NewTypeClass { mod_id; vis; name; docstring; param = typaram; }) in
+         let (env, typeclass_id) = register place env (NewTypeClass { mod_id; span; vis; name; docstring; param = typaram; }) in
          (* Convert the list of methods into a list of type_class_method records *)
          let typarams = typarams_from_list place [typaram] in
          let method_map (Combined.CMethodDecl (method_name, method_typarams, params, rt, docstring)): type_class_method_input =
@@ -522,6 +525,7 @@ and reserve_definition (env: env) (mod_id: mod_id) (mn: module_name) (def: combi
            check_typeclass_method_mentions_typeclass_parameter place name typaram method_name value_params rt;
            {
              mod_id;
+             typeclass_definition_span = span;
              vis;
              typeclass_id;
              name = method_name;

@@ -1,5 +1,5 @@
 {
-  "base_commit": "d8c504b6ee3ad7c8710b56909552eaae38a4f8c9",
+  "base_commit": "33c5fd63739d9f243a5e8677b1c12eb61d5c5b4e",
   "issues": [
     {
       "number": 33,
@@ -104,8 +104,8 @@
       "title": "位置の出ないエラーが、少なくとも10種類ある",
       "summary": "位置の出ないエラー。残りは、エントリポイントが関数でない場合と、ない場合。",
       "depends_on": [],
-      "status": "queued",
-      "reason": "README の「次にやること」の3番。残っている不具合。"
+      "status": "done",
+      "reason": "PR を立てた。計画は issue-87/fix-plan.adoc。"
     },
     {
       "number": 174,
@@ -291,6 +291,14 @@
       ],
       "status": "skipped",
       "reason": "README の「次にやること」の5番。#71 の「先に決めてもらうこと」（#68、#46）に依存する。"
+    },
+    {
+      "number": 205,
+      "title": "`zustral compile --help` が、ない値 `bin` を挙げ、`--error-format` を載せていない",
+      "summary": "`zustral compile --help` が、ない値 `bin` を挙げ、`--error-format` を載せていない",
+      "depends_on": [],
+      "status": "skipped",
+      "reason": "この実行の途中で立てた issue。この実行では扱わない。"
     },
     {
       "number": 200,
@@ -512,27 +520,25 @@
     }
   ],
   "next_issue": {
-    "number": 39,
-    "current_behavior": "`union Color: Free is case Red; case Green; case Blue; end;` から生成する C のタグの列挙が、`mono_14_tag_Blue, mono_14_tag_Green, mono_14_tag_Red` と、宣言の逆順に並ぶ（直す前のコンパイラで、サブエージェントが実行して確かめた）。実行するプログラムからタグを読むと、3つの case の union で 210 になる。",
+    "number": 87,
+    "current_behavior": "issue の 10 種類を、直す前のコンパイラで1つずつ実行した（サブエージェント）。位置が出ないのは、3つである。(a) エントリポイントが関数でない（定数、レコード、union、case、型クラス、メソッド）: `Location: [no span available]`。(b) エントリポイントの名前がモジュールにない: 同じ。(c) C コンパイラの失敗。ほかの場合は、もう位置が出る。",
     "related_code": [
-      "lib/Env.ml: get_union_cases（宣言を新しい順に持つ表を、そのまま返す）",
-      "lib/Monomorphize.ml",
-      "lib/TypingPass.ml: get_union_type_definition, group_cases_whens",
-      "lib/ExtractionPass.ml: region_held_by_value"
+      "lib/Entrypoint.ml",
+      "lib/EnvTypes.ml（宣言の定義の位置を持つのは、関数だけだった）",
+      "lib/Env.ml",
+      "lib/CombiningPass.ml",
+      "lib/ExtractionPass.ml"
     ],
     "related_tests": [
-      "test-programs/suites/004-union",
-      "test-programs/suites/006-linearity/020, 022, 023, 024",
-      "test-programs/suites/032-other-errors/021",
-      "test-programs/suites/036-type-checker-paths/054"
+      "test-programs/suites/032-other-errors/002, 003",
+      "test-programs/suites/044-unexecuted-declarations-and-late-stages/072 から 077"
     ],
     "affected_ci_checks": [
       "tools/refactoring/measure.sh の記録",
-      "base ブランチとの等価性（union を使うプログラムの C が、わざと変わる）"
+      "tools/refactoring/coverage.sh"
     ],
     "risks": [
-      "case の枝を調べる順が、宣言の順になる。枝どうしの線形性のエラーの文面で、どちらの枝を先に言うかが変わる。",
-      "古い逆順のタグの番号を決め打ちした、リポジトリの外の C があれば、壊れる。リポジトリの中にはない。"
+      "エントリポイントのモジュールがない場合と、C コンパイラの失敗は、位置を出さないままにする。指すべきソースの行がない。"
     ]
   }
 }

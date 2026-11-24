@@ -115,6 +115,8 @@ module Combined = struct
 
   type combined_module = CombinedModule of {
         name: module_name;
+        body_name_span: span;
+        (** The span of the module's name in its body file. *)
         kind: module_kind;
         interface_docstring: docstring;
         interface_imports: import_map;
@@ -410,6 +412,8 @@ module SmallCombined = struct
 
   type combined_module = CombinedModule of {
         name: module_name;
+        body_name_span: span;
+        (** The span of the module's name in its body file. *)
         kind: module_kind;
         interface_docstring: docstring;
         interface_imports: import_map;

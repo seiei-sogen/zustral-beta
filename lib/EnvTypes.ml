@@ -23,6 +23,9 @@ open Stages.Mtast
 type mod_rec = ModRec of {
       id: mod_id;
       name: module_name;
+      body_name_span: Span.span;
+      (** The span of the module's name in its body file, where an error about
+          the module as a whole is reported. *)
       imported_instances: InstanceIdSet.t;
       imported_symbols: qident list;
       (** What the interface and the body import, each under its local
@@ -31,6 +34,7 @@ type mod_rec = ModRec of {
 
 type mod_input = {
     name: module_name;
+    body_name_span: Span.span;
     imported_instances: InstanceIdSet.t;
     imported_symbols: qident list;
   }
@@ -39,6 +43,9 @@ type mod_input = {
 type record_decl = {
     id: record_id;
     mod_id: mod_id;
+    span: Span.span;
+    (** The span of the definition, where an error about the declaration as an
+        entrypoint is reported. *)
     vis: type_vis;
     name: identifier;
     docstring: docstring;
@@ -52,6 +59,9 @@ type record_decl = {
 type union_decl = {
     id: union_id;
     mod_id: mod_id;
+    span: Span.span;
+    (** The span of the definition, where an error about the declaration as an
+        entrypoint is reported. *)
     vis: type_vis;
     name: identifier;
     docstring: docstring;
@@ -63,6 +73,9 @@ type union_decl = {
 type union_case_decl = {
     id: union_case_id;
     mod_id: mod_id;
+    union_definition_span: Span.span;
+    (** The span of the definition of the union. A case has no span of its
+        own. *)
     vis: vis;
     (** This is {!VisPublic} if the parent union is public, {!VisPrivate} otherwise. *)
     union_id: union_id;
@@ -105,6 +118,9 @@ type function_decl = {
 type typeclass_decl = {
     id: typeclass_id;
     mod_id: mod_id;
+    span: Span.span;
+    (** The span of the definition, where an error about the declaration as an
+        entrypoint is reported. *)
     vis: vis;
     name: identifier;
     docstring: docstring;
@@ -127,6 +143,9 @@ type instance_decl = {
 type typeclass_method_decl = {
     id: typeclass_method_id;
     mod_id: mod_id;
+    typeclass_definition_span: Span.span;
+    (** The span of the definition of the typeclass. A method has no span of
+        its own. *)
     vis: vis;
     (** This is the visibility of the parent typeclass. *)
     typeclass_id: typeclass_id;
@@ -150,6 +169,9 @@ type decl =
   | Constant of {
       id: constant_id;
       mod_id: mod_id;
+      span: Span.span;
+      (** The span of the definition, where an error about the constant as
+          an entrypoint is reported. *)
       vis: vis;
       name: identifier;
       ty: ty;
@@ -223,6 +245,7 @@ type monomorph =
 
 type const_input = {
     mod_id: mod_id;
+    span: Span.span;
     vis: vis;
     name: identifier;
     ty: ty;
@@ -233,6 +256,7 @@ type record_input = {
     id: record_id;
     (** Reserved before the record is registered ({!Env.reserve_record_id}). *)
     mod_id: mod_id;
+    span: Span.span;
     vis: type_vis;
     name: identifier;
     docstring: docstring;
@@ -245,6 +269,7 @@ type union_input = {
     id: union_id;
     (** Reserved before the union is registered ({!Env.reserve_union_id}). *)
     mod_id: mod_id;
+    span: Span.span;
     vis: type_vis;
     name: identifier;
     docstring: docstring;
@@ -254,6 +279,7 @@ type union_input = {
 
 type union_case_input = {
     mod_id: mod_id;
+    union_definition_span: Span.span;
     vis: vis;
     union_id: union_id;
     name: identifier;
@@ -275,6 +301,7 @@ type function_input = {
 
 type type_class_input = {
     mod_id: mod_id;
+    span: Span.span;
     vis: vis;
     name: identifier;
     docstring: docstring;
@@ -283,6 +310,7 @@ type type_class_input = {
 
 type type_class_method_input = {
     mod_id: mod_id;
+    typeclass_definition_span: Span.span;
     vis: vis;
     typeclass_id: typeclass_id;
     name: identifier;

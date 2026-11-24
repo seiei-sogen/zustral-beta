@@ -7,6 +7,10 @@
     { "type": "text", "content": " in module " },
     { "type": "code", "content": "Test" }
   ],
-  "span": null,
-  "context": null
+  "span": {
+    "filename": "test-programs/suites/032-other-errors/002-entrypoint-no-such-function/Test.zum",
+    "startp": { "line": 1, "column": 12 },
+    "end": { "line": 1, "column": 16 }
+  },
+  "context": [ [ 1, "module body Test is" ], [ 2, "end module body." ] ]
 }

@@ -134,7 +134,7 @@ let world: world Lazy.t =
     let tyvar: ty = TyVar (TypeVariable (i "T", FreeUniverse, q "f", [make_sident test_mod (i "Describe")], StandsForItself)) in
     (* Constants of types no constant of a program has. *)
     let constant env name ty =
-      fst (Env.register NoSpan env (EnvTypes.NewConstant { mod_id; vis = VisPublic; name = i name; ty; docstring = Docstring "" }))
+      fst (Env.register NoSpan env (EnvTypes.NewConstant { mod_id; span = Span.empty_span; vis = VisPublic; name = i name; ty; docstring = Docstring "" }))
     in
     let box: ty = NamedType (q "Box", Id.RecordTypeId box_id, [], FreeUniverse) in
     let env = constant env "generic" tyvar in
@@ -350,10 +350,10 @@ let with_region_typeclass (env: Env.env): Env.env =
   let r: TypeParameter.type_parameter = TypeParameter.make_typaram (i "R", RegionUniverse, q "Regional", []) in
   let (env, typeclass_id) =
     Env.register NoSpan env (EnvTypes.NewTypeClass {
-        mod_id = w.mod_id; vis = VisPublic; name = i "Regional"; docstring = Docstring ""; param = r }) in
+        mod_id = w.mod_id; span = sp; vis = VisPublic; name = i "Regional"; docstring = Docstring ""; param = r }) in
   let (env, _) =
     Env.register NoSpan env (EnvTypes.NewTypeClassMethod {
-        mod_id = w.mod_id; vis = VisPublic; typeclass_id; name = i "regional"; docstring = Docstring "";
+        mod_id = w.mod_id; typeclass_definition_span = sp; vis = VisPublic; typeclass_id; name = i "regional"; docstring = Docstring "";
         typarams = TypeParameters.empty_typarams;
         value_params = [ValueParameter (i "value", TyVar (TypeParameter.typaram_to_tyvar r))]; rt = int32 }) in
   env

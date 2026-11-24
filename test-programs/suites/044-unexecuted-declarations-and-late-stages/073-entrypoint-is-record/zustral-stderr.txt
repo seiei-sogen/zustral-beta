@@ -4,6 +4,16 @@
   "text": [
     { "type": "text", "content": "The entrypoint must be a function." }
   ],
-  "span": null,
-  "context": null
+  "span": {
+    "filename": "test-programs/suites/044-unexecuted-declarations-and-late-stages/073-entrypoint-is-record/Test.zum",
+    "startp": { "line": 2, "column": 4 },
+    "end": { "line": 4, "column": 8 }
+  },
+  "context": [
+    [ 1, "module body Test is" ],
+    [ 2, "    record main: Free is" ],
+    [ 3, "        x: Int32;" ],
+    [ 4, "    end;" ],
+    [ 5, "end module body." ]
+  ]
 }

@@ -34,6 +34,7 @@ let ctx: TypeCheckExpr.expr_ctx =
   let (env, mod_id) =
     Env.add_module Env.empty_env {
         name = example;
+        body_name_span = Zustral_core.Span.empty_span;
         imported_instances = InstanceIdSet.InstanceIdSet.empty;
         imported_symbols = []
       }

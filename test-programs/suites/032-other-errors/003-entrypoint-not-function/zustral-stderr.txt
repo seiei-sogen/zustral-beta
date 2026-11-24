@@ -4,6 +4,14 @@
   "text": [
     { "type": "text", "content": "The entrypoint must be a function." }
   ],
-  "span": null,
-  "context": null
+  "span": {
+    "filename": "test-programs/suites/032-other-errors/003-entrypoint-not-function/Test.zum",
+    "startp": { "line": 2, "column": 4 },
+    "end": { "line": 2, "column": 30 }
+  },
+  "context": [
+    [ 1, "module body Test is" ],
+    [ 2, "    constant main: Int32 := 0;" ],
+    [ 3, "end module body." ]
+  ]
 }

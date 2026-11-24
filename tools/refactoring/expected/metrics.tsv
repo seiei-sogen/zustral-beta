@@ -17,7 +17,7 @@ lib/CRenderer.ml	295	0	0	0	0	1	1	0	0	0	0
 lib/CRepr.ml	109	0	0	0	0	0	5	0	0	0	0
 lib/CliErrors.ml	141	0	1	0	0	0	12	0	0	0	0
 lib/CodeGen.ml	711	0	0	0	0	0	0	0	0	0	0
-lib/CombiningPass.ml	389	14	0	0	0	0	0	0	0	0	0
+lib/CombiningPass.ml	391	14	0	0	0	0	0	0	0	0	0
 lib/Common.ml	71	0	0	0	0	0	3	0	0	0	0
 lib/Compiler.ml	147	0	0	0	0	0	0	0	0	0	0
 lib/Cst.ml	175	0	0	0	0	0	2	0	0	0	0
@@ -26,11 +26,11 @@ lib/DeclarationErrors.ml	536	0	0	0	0	0	3	0	0	0	0
 lib/DesugarBorrows.ml	269	1	0	0	0	0	0	0	0	0	0
 lib/DesugarPaths.ml	151	0	0	0	0	0	0	0	0	0	0
 lib/DesugaringPass.ml	44	0	0	0	0	0	0	0	0	0	0
-lib/Entrypoint.ml	147	8	0	0	0	0	0	0	0	0	0
+lib/Entrypoint.ml	158	9	0	0	0	0	0	0	0	0	0
 lib/EntrypointErrors.ml	64	0	0	0	0	0	0	0	0	0	0
-lib/Env.ml	685	9	0	0	0	0	1	4	0	0	0
+lib/Env.ml	686	9	0	0	0	0	1	4	0	0	0
 lib/EnvExtras.ml	16	0	0	0	0	0	0	0	0	0	0
-lib/EnvTypes.ml	326	0	0	0	0	0	1	0	0	0	0
+lib/EnvTypes.ml	354	0	0	0	0	0	1	0	0	0	0
 lib/EnvUtils.ml	53	0	0	0	0	0	0	0	0	0	0
 lib/Error.ml	255	13	0	0	0	0	1	1	0	0	0
 lib/ErrorText.ml	44	0	0	0	0	0	2	0	0	0	0
@@ -42,7 +42,7 @@ lib/EvaluationOrderOfStatement.ml	78	0	0	0	0	0	0	0	0	0	0
 lib/EvaluationOrderSteps.ml	33	0	0	0	0	0	0	0	0	0	0
 lib/ExportInstantiation.ml	30	0	0	0	0	0	0	0	0	0	0
 lib/ExternalNameCheck.ml	17	2	0	0	0	0	0	0	0	0	0
-lib/ExtractionPass.ml	648	18	0	0	0	0	0	0	0	0	0
+lib/ExtractionPass.ml	652	18	0	0	0	0	0	0	0	0	0
 lib/ForeignType.ml	138	2	0	0	0	0	0	0	0	0	0
 lib/GenericDeclarationCopiedByMonomorph.ml	37	0	0	0	0	0	0	0	0	0	0
 lib/GenericErrors.ml	214	0	0	0	0	0	1	0	0	0	0
@@ -80,7 +80,7 @@ lib/ReturnCheck.ml	133	3	0	0	0	0	0	0	0	0	0
 lib/SignatureTypeAtUse.ml	41	0	0	0	0	0	0	0	0	0	0
 lib/SourceContext.ml	54	0	0	0	0	0	1	0	0	0	0
 lib/Span.ml	63	0	0	0	0	0	1	0	0	0	0
-lib/Stages.ml	750	0	0	0	0	0	8	0	0	0	0
+lib/Stages.ml	754	0	0	0	0	0	8	0	0	0	0
 lib/StringSet.ml	9	0	0	0	0	0	0	0	0	0	0
 lib/Supply.ml	74	0	0	0	0	0	0	0	0	0	0
 lib/TastUtil.ml	185	3	0	0	0	0	0	0	0	0	0

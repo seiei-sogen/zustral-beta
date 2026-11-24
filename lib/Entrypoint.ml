@@ -27,8 +27,18 @@ type entrypoint_kind =
       and the IDs of `RootCapability` and `ExitCode`. *)
 
 (** Check the entrypoint function is valid, return the ID of the function
-    and the entrypoint kind. *)
+    and the entrypoint kind. An error is reported at the declaration the name
+    finds, or, when it finds none, at the name of the module in its body. A
+    module that is not compiled has no place in the sources. *)
 let rec check_entrypoint_validity (env: env) (name: qident): function_id * entrypoint_kind =
+  let module_name: module_name = source_module_name name in
+  let body_name_span: Span.span =
+    match get_module_by_name env module_name with
+    | Some (ModRec { body_name_span; _ }) ->
+       body_name_span
+    | None ->
+       declaration_error NoSpan (UnknownModule module_name)
+  in
   match get_decl_by_name NoSpan env (qident_to_sident name) with
   | Some decl ->
      (match decl with
@@ -66,12 +76,13 @@ let rec check_entrypoint_validity (env: env) (name: qident): function_id * entry
              entrypoint_error place NotMonomorphic
          else
            entrypoint_error place NotPublic
-      | Constant _ | Record _ | Union _ | UnionCase _ | TypeClass _ | TypeClassMethod _ ->
-         entrypoint_error NoSpan NotFunction)
+      | Constant { span; _ } | Record { span; _ } | Union { span; _ } | TypeClass { span; _ }
+      | UnionCase { union_definition_span = span; _ } | TypeClassMethod { typeclass_definition_span = span; _ } ->
+         entrypoint_error (AtSpan span) NotFunction)
   | None ->
-      entrypoint_error NoSpan (NoSuchFunction {
+      entrypoint_error (AtSpan body_name_span) (NoSuchFunction {
           name = original_name name;
-          module_name = source_module_name name;
+          module_name;
         })
 
 and root_cap_type_id = function

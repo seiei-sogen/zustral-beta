@@ -1,0 +1,20 @@
+{
+  "module": "Test",
+  "kind": "Entrypoint Definition Error",
+  "text": [
+    { "type": "text", "content": "No function named " },
+    { "type": "code", "content": "main" },
+    { "type": "text", "content": " in module " },
+    { "type": "code", "content": "Test" }
+  ],
+  "span": {
+    "filename": "test-programs/suites/032-other-errors/034-entrypoint-no-such-function-in-a-module-with-an-interface/Test.zum",
+    "startp": { "line": 1, "column": 12 },
+    "end": { "line": 1, "column": 16 }
+  },
+  "context": [
+    [ 1, "module body Test is" ],
+    [ 2, "    function start(): ExitCode is" ],
+    [ 3, "        return ExitSuccess();" ]
+  ]
+}
