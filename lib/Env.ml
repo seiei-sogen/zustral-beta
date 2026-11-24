@@ -378,7 +378,10 @@ let module_public_instances (env: env) (id: mod_id): instance_decl list =
 
 let get_union_cases (env: env) (id: union_id): union_case_decl list =
   let (Env { decls; _ }) = env in
-  List.filter (fun (case: union_case_decl) -> equal_union_id case.union_id id) (List.filter_map union_case_of decls.declarations)
+  let is_case_of_the_union (case: union_case_decl): bool = equal_union_id case.union_id id in
+  (* The newest declaration is first. The cases are returned in the order they
+     are declared in, which is the order of the tags of the C (#39). *)
+  List.rev (List.filter is_case_of_the_union (List.filter_map union_case_of decls.declarations))
 
 let get_callable (place: place) (env: env) (importing_module_name: module_name) (name: sident): callable option =
   let _ = importing_module_name in

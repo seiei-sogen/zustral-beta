@@ -10,9 +10,9 @@
     },
     { "type": "text", "content": "a case" },
     { "type": "text", "content": " statement. In one branch it is " },
-    { "type": "text", "content": "not yet consumed" },
-    { "type": "text", "content": " while in the other it is " },
     { "type": "text", "content": "consumed" },
+    { "type": "text", "content": " while in the other it is " },
+    { "type": "text", "content": "not yet consumed" },
     { "type": "text", "content": "." }
   ],
   "span": {

@@ -1,0 +1,26 @@
+pragma Unsafe_Module;
+
+module body Lib is
+    union Shape: Free is
+        case Square;
+        case Triangle;
+        case Circle is
+            radius: Int32;
+    end;
+
+    function makeSquare(): Shape is
+        return Square();
+    end;
+
+    function makeTriangle(): Shape is
+        return Triangle();
+    end;
+
+    function makeCircle(): Shape is
+        return Circle(radius => 1);
+    end;
+
+    function shapeTag(shape: Shape): Int32 is
+        return @embed(Int32, "(int32_t)($1.tag)", shape);
+    end;
+end module body.

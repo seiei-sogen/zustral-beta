@@ -1,0 +1,116 @@
+= issue #39 の修正計画: union の C のタグを、宣言の順にする
+
+== 目的
+
+issue #39 は、union の case が、生成される C の列挙で、宣言と逆の順に並ぶことを報告している。
+`Red`、`Green`、`Blue` の順に宣言すると、`Red` の番号は 0 ではなく 2 になる。
+issue は、タグの順を保証するか、番号を外へ渡す側が順序に頼らないかの判断を求めている。
+
+*タグが宣言の順になることを、コンパイラの性質として保証する。*
+
+* Decimal の実行時は、`RoundingMode` の case を番号で受ける（`docs/plan.md` の L7）。順序が保証されないと、宣言を並べ替えただけで丸めが変わる。
+* 順序に頼らない渡し方は、番号を外へ渡すすべての所に、名前から番号への対応表が要る。保証は、コンパイラの1か所で済む。
+* C の列挙も、最初の名前を 0 とする。宣言の順は、外部の C と union をやり取りするときにも、読む人の予想と合う。
+
+所有者の代わりに選んだ既定である。違う判断にするときは、この PR を取り消して、issue を開き直す。
+
+終わりの条件は、どの union でも、最初に宣言した case のタグが 0 で、次が 1 であることを、動くプログラムで確かめられることである。
+
+== 現状
+
+`1d6a37d` で確かめた。`test-programs/suites/004-union/001-simple-union` を `zustral compile … --target-type=c` でコンパイルすると、`Color` の列挙と欄は次のとおりだった。
+
+[source,c]
+----
+typedef enum {
+    mono_14_tag_Blue, mono_14_tag_Green, mono_14_tag_Red
+} mono_14_tag;
+
+typedef struct mono_14 {mono_14_tag tag;union { struct  {} Blue;struct  {} Green;struct  {} Red;} data;} mono_14;
+----
+
+原因は、`lib/Env.ml` の `get_union_cases` である。
+
+* 環境は、宣言を新しい順に持つ。`add_declaration` が、新しい宣言を一覧の先頭に足すからである。名前と ID の表は、この順に頼って、新しい宣言を優先する。
+* case は、宣言の順に登録される（`lib/ExtractionPass.ml` の `add_union_cases`）。だから一覧の上では、後に宣言した case が先に来る。
+* `get_union_cases` は、この一覧から union の case を拾い、並べ直さずに返していた。同じ一覧から型クラスのメソッドを拾う `get_typeclass_methods` は、`List.rev` で宣言の順に戻している。
+
+順序が逆になるのは、この関数の中だけである。呼び出し元は3か所あり、どれもこの順をそのまま使う。
+
+* `lib/Monomorphize.ml`: union の具体化の case。C の列挙、union の欄、構築子の順になる。
+* `lib/TypingPass.ml` の `get_union_type_definition`: `case` 文の型検査。`when` を case の順に並べ直して、その順に検査する（`group_cases_whens`）。C の `switch` の枝の順、型検査のエラーを出す枝、線形性の検査が基準にする枝が、この順で決まる。
+* `lib/ExtractionPass.ml` の `region_held_by_value`: インスタンスのメソッドの型が保持する、最初の領域の型変数を探す。
+
+== 変更
+
+* `lib/Env.ml` の `get_union_cases`: 拾った case を `List.rev` で宣言の順に戻す。`get_typeclass_methods` と同じ形である。`lib/Env.mli` の説明に、宣言の順で返すことを書く。
+* `docs/plan.md` の L7 に結果を書く。`docs/check-plan.py` の `FIXED` に 39 を足す。
+* `docs/decimal.md` の 17 節: 「union の C のタグは、宣言の逆順に並ぶ」を、宣言の順に並ぶ、に書き直す。
+
+環境の一覧そのものを古い順にする案は、採らない。名前と ID の表は、新しい宣言が先に来ることに頼っている。直すべきなのは、新しい順の一覧を、宣言の順の答えとして返していた関数である。
+
+== テスト
+
+最初に書く、失敗するテスト: `test-programs/suites/004-union/006-tags-follow-the-declaration-order`。
+安全でないモジュールの `@embed` で、各 case の値のタグを読み、出力する。
+次の union を含む。
+
+* case が1つの union。
+* case が3つの union と、4つの union。
+* 別のモジュールで宣言し、取り込んだ union。
+* インターフェースで不透明な型として宣言し、本体で定義した union。
+* 汎用の union の、2つの具体化（`Choice[Int32]` と `Choice[Bool]`）。
+* 組み込みの `Option` の、2つの具体化。
+
+直す前の出力は、`Color: 210`、`Direction: 3210`、`Option[Int32]: 10` などだった。case が1つの union だけが合っていた。
+
+順序で結果が変わる、既にあるテストを書き直す。
+
+* `test-programs/suites/006-linearity/020`、`022`、`023`、`024` と、`032-other-errors/021-linearity-inconsistent-case-branches`: 線形性のエラーの「In one branch it is … while in the other it is …」は、最初の枝の状態を先に出す。最初の枝が、最後に宣言した case の枝から、最初に宣言した case の枝に変わる。`006-linearity` の4つは `when` を宣言の順に書いているので、文面は、ソースの上の最初の枝の状態から始まるようになる。`032/021` は `Option` の `Some` を先に書いているので、文面は、後に書いた `None` の枝の状態（not yet consumed）から始まる。
+* `036-type-checker-paths/054`: 2つの枝に型のエラーがあるとき、どちらを報告するかを固定する。名前を `054-case-branches-checked-last-declared-first` から `054-case-branches-checked-in-declaration-order` に変える。`when` を宣言と逆の順に書き直して、ソースの順ではなく、宣言の順で決まることを確かめる。
+* `039-numbering-order/004-region-in-case-branch` の `README.md`: 領域の番号を、最後の case から付ける、とあった。過去のこととして書き直す。
+
+== 確認
+
+* 計測値: `lib/Env.ml` が3行増える。`measure.sh --record` で記録し直す。
+* エラーメッセージのテスト: 文面は増えない。
+* カバレッジ: 変えた行は、union を使うどのプログラムでも実行される。
+* 網羅性のエラー（`Non-exhaustive case statement.`）は、足りない case を挙げないので、変わらない。
+* 標準ライブラリ、例、実行時の C（`lib/prelude.c`）に、タグの番号に頼る所はない（`grep` で `.tag` と `_tag_` を探した）。`main` の `ExitCode` の `switch` は、タグを名前で書く。
+
+== 範囲外
+
+* `case` 文の枝を、`when` を書いた順ではなく、union の宣言の順に検査すること。エラーを報告する枝と、線形性の文面の向きが、これで決まる。ソースの順にするかは、別の判断である。
+* 外部の C と union をやり取りするときの、C の型の決まり（タグの型の大きさなど）。
+
+== セルフレビュー
+
+issue の本文に照らして見直した。
+
+* 「タグの順を保証するか、しないかを決める」: 保証する。理由は「目的」の節にある。
+* 「`get_union_cases` が宣言の一覧から case を拾う」: issue の原因の説明どおりだった。順序が逆になるのは、この関数の中だけである。
+* 呼び出し元: `get_union_cases` を呼ぶのは、上の3か所だけである（`grep -rn get_union_cases`）。どれも宣言の順を前提にして困らない。`region_held_by_value` の説明は「最初の領域の型変数」で、宣言の順の方が説明に合う。
+* 見直しで足したこと: 順序で結果が変わる6つのテストを、書き直しに足した。
+
+敵対的に試したもの。どれも直した後で、宣言の順のタグになった。
+
+* case が1つ、3つ、4つ、12 の union。12 の union は、使い捨てのプログラムで `C0`、`C7`、`C11` が 0、7、11 になることを見た。
+* 汎用の union の、複数の具体化。欄に別の具体化（`Box[T]`、`Inner[Box[T]]`、`Option[Inner[T]]`）を持つ union を、`Int32` と `Bool` で具体化した。C は警告のほかに問題なくコンパイルでき、タグは 0 から 3、`case` 文は各 case の枝へ進んだ。
+* インターフェースで不透明な型として宣言し、本体で定義した union。
+* 取り込んだ union（別のモジュールの union と、組み込みの `Option`）。
+* 2つの case が別の領域の型変数を保持する union を、インスタンスのメソッドが受ける場合。エラーは、最初の case の領域（`R`）を名指しする。直す前は、最後の case の領域（`S`）だった。コードレビューの後で、`test-programs/suites/040-region-as-value-type/038-union-slots-of-two-regions-in-instance-method-names-the-region-of-the-first-case` に足した。
+
+== 実装の記録
+
+* `tools/refactoring/run-every-ci-check-locally.sh` の 14 個の検査は、すべて `ok` だった。
+* `004-union/001-simple-union` の `Color` の列挙と欄は、次のとおりになった。
++
+[source,c]
+----
+typedef enum {
+    mono_14_tag_Red, mono_14_tag_Green, mono_14_tag_Blue
+} mono_14_tag;
+
+typedef struct mono_14 {mono_14_tag tag;union { struct  {} Red;struct  {} Green;struct  {} Blue;} data;} mono_14;
+----
+* 新しいテストを書いたとき、`int32ChoiceTag(Second())` が、「`Second` is generic but unconstrained」の型エラーになった。関数の引数の位置から、汎用の構築子へ型が届かないためである。`(Second() : Choice[Int32])` と書いた。届かないことは、`docs/decimal.md` の 17 節に既に挙がっている。
