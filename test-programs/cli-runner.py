@@ -10,7 +10,9 @@ and compares the exit status, the names of the files the compiler left behind,
 stdout and stderr with `expected.txt`. `--record` writes `expected.txt` instead.
 A test can also have `unset-environment-variables.txt`, the names of the
 environment variables the compiler runs without. `TMPDIR` is the directory, so
-a temporary file the compiler leaves is among the files it left behind.
+a temporary file the compiler leaves is among the files it left behind. With
+`stderr-is-the-full-device.txt`, the stderr of the compiler is `/dev/full`,
+which it cannot write, and the stderr to compare is empty.
 
 Some tests fix behaviour that an issue calls a bug. Their names end in the issue
 number. The fix for the issue rewrites their `expected.txt`.
@@ -26,7 +28,8 @@ import tempfile
 HERE = pathlib.Path(__file__).resolve().parent
 TESTS = HERE / "cli"
 UNSET_VARIABLES = "unset-environment-variables.txt"
-NOT_INPUTS = {"args.txt", "expected.txt", "README.md", UNSET_VARIABLES}
+STDERR_IS_THE_FULL_DEVICE = "stderr-is-the-full-device.txt"
+NOT_INPUTS = {"args.txt", "expected.txt", "README.md", UNSET_VARIABLES, STDERR_IS_THE_FULL_DEVICE}
 
 
 def tests() -> list[pathlib.Path]:
@@ -56,13 +59,15 @@ def run(compiler: str, test: pathlib.Path) -> str:
         inputs = [f for f in test.iterdir() if f.name not in NOT_INPUTS]
         for f in inputs:
             shutil.copy(f, cwd)
-        done = subprocess.run([compiler, *arguments(test)], cwd=cwd, env={**environment(test), "TMPDIR": cwd}, capture_output=True, timeout=600)
+        # A test can ask for a stderr that the compiler cannot write.
+        stderr = open("/dev/full", "wb") if (test / STDERR_IS_THE_FULL_DEVICE).exists() else subprocess.PIPE
+        done = subprocess.run([compiler, *arguments(test)], cwd=cwd, env={**environment(test), "TMPDIR": cwd}, stdout=subprocess.PIPE, stderr=stderr, timeout=600)
         left = sorted(f.name for f in pathlib.Path(cwd).iterdir() if f.name not in {i.name for i in inputs})
         return (
             f"exit: {done.returncode}\n"
             f"files: {' '.join(left)}\n"
             f"--- stdout\n{scrub(done.stdout.decode(errors='replace'), cwd)}"
-            f"--- stderr\n{scrub(done.stderr.decode(errors='replace'), cwd)}"
+            f"--- stderr\n{scrub((done.stderr or b'').decode(errors='replace'), cwd)}"
         )
 
 

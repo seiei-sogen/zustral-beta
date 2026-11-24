@@ -1,0 +1,1 @@
+Shows that a flag the compiler cannot split into a name and a value is reported in JSON when another argument is `--error-format=json` (issue #174). The compiler fails on it before it reads any flag, `--error-format` included.

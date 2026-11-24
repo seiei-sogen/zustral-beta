@@ -1,0 +1,1 @@
+compile Bad.zum --target-type=tc --error-format=json

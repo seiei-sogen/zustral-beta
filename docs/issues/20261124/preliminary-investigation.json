@@ -1,5 +1,5 @@
 {
-  "base_commit": "33c5fd63739d9f243a5e8677b1c12eb61d5c5b4e",
+  "base_commit": "112222d3f9b7554209edcad2ab4dc9c0b14deb67",
   "issues": [
     {
       "number": 33,
@@ -112,8 +112,8 @@
       "title": "内部エラーとコマンドラインのエラーが、`--error-format=json` を付けても平文で出る",
       "summary": "内部エラーとコマンドラインのエラーが、--error-format=json を付けても平文で出る。",
       "depends_on": [],
-      "status": "queued",
-      "reason": "README の「次にやること」の3番。残っている不具合。"
+      "status": "done",
+      "reason": "PR を立てた。引数のどこかに --error-format=json があれば、どのエラーも JSON にすると判断した。計画は issue-174/fix-plan.adoc。"
     },
     {
       "number": 177,
@@ -291,6 +291,14 @@
       ],
       "status": "skipped",
       "reason": "README の「次にやること」の5番。#71 の「先に決めてもらうこと」（#68、#46）に依存する。"
+    },
+    {
+      "number": 207,
+      "title": "コマンドラインの入力: `--entrypoint` の空の名前を受ける。一時ディレクトリがないと内部エラーになる",
+      "summary": "コマンドラインの入力: `--entrypoint` の空の名前を受ける。一時ディレクトリがないと内部エラーになる",
+      "depends_on": [],
+      "status": "skipped",
+      "reason": "この実行の途中で立てた issue。この実行では扱わない。"
     },
     {
       "number": 205,
@@ -520,25 +528,26 @@
     }
   ],
   "next_issue": {
-    "number": 87,
-    "current_behavior": "issue の 10 種類を、直す前のコンパイラで1つずつ実行した（サブエージェント）。位置が出ないのは、3つである。(a) エントリポイントが関数でない（定数、レコード、union、case、型クラス、メソッド）: `Location: [no span available]`。(b) エントリポイントの名前がモジュールにない: 同じ。(c) C コンパイラの失敗。ほかの場合は、もう位置が出る。",
+    "number": 174,
+    "current_behavior": "`--error-format=json` を付けても、次のエラーが平文で出る（直す前のコンパイラで、サブエージェントが1つずつ実行して確かめた）。知らないコマンド、読めないソースファイル、余った引数、形のおかしいフラグ、知らない target-type、2回書いた --error-format、内部エラー（TMPDIR がない、など）。型エラーなどの、コンパイルのエラーは JSON で出る。",
     "related_code": [
-      "lib/Entrypoint.ml",
-      "lib/EnvTypes.ml（宣言の定義の位置を持つのは、関数だけだった）",
-      "lib/Env.ml",
-      "lib/CombiningPass.ml",
-      "lib/ExtractionPass.ml"
+      "cli/Cli.ml: main",
+      "cli/CliEngine.ml: report_and_exit, exec_compile",
+      "cli/CliParser.ml: parse_error_reporting_mode",
+      "lib/Outcome.ml: catch（Zustral_error だけを捕まえる）"
     ],
     "related_tests": [
-      "test-programs/suites/032-other-errors/002, 003",
-      "test-programs/suites/044-unexecuted-declarations-and-late-stages/072 から 077"
+      "test-programs/cli/022-type-error-json",
+      "test-programs/cli（平文のエラーのテスト）",
+      "test/UnexecutedWordingTest.ml"
     ],
     "affected_ci_checks": [
       "tools/refactoring/measure.sh の記録",
-      "tools/refactoring/coverage.sh"
+      "tools/refactoring/coverage.sh",
+      "tools/refactoring/unexecuted-lines.py"
     ],
     "risks": [
-      "エントリポイントのモジュールがない場合と、C コンパイラの失敗は、位置を出さないままにする。指すべきソースの行がない。"
+      "エラーを報告する所が、Cli.main の1か所になる。CliEngine.exec を呼ぶ側は、エラーを自分で報告する必要がある。呼ぶのは Cli.main だけである。"
     ]
   }
 }

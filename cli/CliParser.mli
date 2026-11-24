@@ -30,10 +30,6 @@ type target =
   | CStandalone of { output_path: string; entrypoint: entrypoint option; }
   (** Compile to a standalone C file. *)
 
-type error_reporting_mode =
-  | ErrorReportPlain
-  | ErrorReportJson
-
 (** The type of compiler commands. The compiler's CLI arglist is parsed to an
     instance of this type. *)
 type cmd =
@@ -48,8 +44,6 @@ type cmd =
       (** The list of modules to compile in order. *)
       target: target;
       (** The compiler's target. *)
-      error_reporting_mode: error_reporting_mode;
-      (** Whether to report errors in plain text or JSON. *)
     }
   (** Whole program compilation using the C backend. *)
 

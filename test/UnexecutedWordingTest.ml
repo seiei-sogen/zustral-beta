@@ -76,6 +76,31 @@ let test_unexpected_exception_is_an_internal_error _ =
   let reported = make_error NoSpan (Generic GenericErrors.LeftoverArguments) in
   eq reported (error_of_exception (Zustral_error reported))
 
+(* The exception that ends the compiler is reported in JSON when an argument
+   is `--error-format=json` (issue #174): this is the text Cli.main writes. *)
+let test_exception_is_reported_in_the_format_the_arguments_ask_for _ =
+  let open Zustral_cli.RenderExceptionInFormatOfArguments in
+  let open Yojson.Basic.Util in
+  let reported_in_json (exn: exn): Yojson.Basic.t =
+    Yojson.Basic.from_string (render_exception_in_format_of_arguments ["zustral"; "compile"; "A.zum"; "--error-format=json"] exn)
+  in
+  let second_text_content (json: Yojson.Basic.t): string =
+    to_string (member "content" (List.nth (to_list (member "text" json)) 1))
+  in
+  (* An exception other than the compiler's errors is an internal error. *)
+  let json = reported_in_json Not_found in
+  eq "Internal Error" (to_string (member "kind" json));
+  eq "Not_found" (second_text_content json);
+  (* The characters that JSON escapes, and the others, come back as they were. *)
+  let message = "quote \" backslash \\ non-ASCII \xc3\xa9 control \x01\n" in
+  eq message (second_text_content (reported_in_json (Zustral_error (make_error NoSpan (Internal message)))));
+  (* The first argument is the name of the binary, not an argument, and there
+     may be no arguments at all: plain text. *)
+  List.iter (fun (args: string list) ->
+      assert_bool "plain text"
+        (String.starts_with ~prefix:"Error:\n  Title: Internal Error\n" (render_exception_in_format_of_arguments args Not_found)))
+    [["--error-format=json"]; []]
+
 let module_of (error: zustral_error): string option =
   let (ZustralError { location; _ }) = error in
   Option.map mod_name_string (location_module_name location)
@@ -109,6 +134,7 @@ let suite =
       "Write to a full device" >:: test_write_to_full_device;
       "Command killed by a signal" >:: test_command_killed_by_signal;
       "Unexpected exception is an internal error" >:: test_unexpected_exception_is_an_internal_error;
+      "Exception is reported in the format the arguments ask for" >:: test_exception_is_reported_in_the_format_the_arguments_ask_for;
       "Module name is added once" >:: test_module_name_is_added_once;
       "Source context is added once" >:: test_source_context_is_added_once;
       "Line numbers are right aligned" >:: test_line_numbers_are_right_aligned

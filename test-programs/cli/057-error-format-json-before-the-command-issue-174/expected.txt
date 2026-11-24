@@ -1,0 +1,17 @@
+exit: 255
+files: 
+--- stdout
+--- stderr
+{
+  "module": null,
+  "kind": "Command Line Arguments Error",
+  "text": [
+    { "type": "text", "content": "Unknown option " },
+    { "type": "code", "content": "--error-format=json" },
+    { "type": "text", "content": ". Run " },
+    { "type": "code", "content": "zustral --help" },
+    { "type": "text", "content": " to see the options." }
+  ],
+  "span": null,
+  "context": null
+}

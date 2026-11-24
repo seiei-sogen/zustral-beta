@@ -18,9 +18,9 @@ or-pattern alternatives is listed while one alternative on it is unexecuted.
 One kind of point is left out. For a call that is not the last thing of its
 arm, bisect_ppx adds a point that is hit when the call returns, and records
 it at the last character of the function's name. The functions that raise an
-error (`type_error` and the others of lib/Error.mli, `internal_err`,
-`report_and_exit`, `exit`) never return, so that point of theirs is hit by
-nothing, whatever the tests do. The points of the call's own arm stay.
+error (`type_error` and the others of lib/Error.mli, `internal_err`) and
+`exit` never return, so that point of theirs is hit by nothing, whatever the
+tests do. The points of the call's own arm stay.
 
 The record, expected/unexecuted-lines.tsv, has one row per listed line: file,
 the top-level definition the line is in (`name#2` for the second definition of
@@ -45,11 +45,11 @@ import sys
 
 GENERATED = re.compile(r"lib/(BuiltInModules|Parser|Lexer)\.ml$")
 DEFINITION = re.compile(r"^(?:let|and)(?: rec)? (?:\(?)([A-Za-z_][A-Za-z0-9_']*)")
-# The functions whose type says that they do not return (lib/Error.mli,
-# cli/CliEngine.mli), and `exit`.
+# The functions whose type says that they do not return (lib/Error.mli), and
+# `exit`.
 NEVER_RETURNS = {
     "parse_error", "cli_error", "type_error", "linearity_error", "declaration_error",
-    "entrypoint_error", "generic_error", "c_compiler_error", "internal_err", "report_and_exit", "exit",
+    "entrypoint_error", "generic_error", "c_compiler_error", "internal_err", "exit",
 }
 NAME_AT_END = re.compile(r"[A-Za-z_][A-Za-z0-9_']*$")
 HERE = pathlib.Path(__file__).resolve().parent

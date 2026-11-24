@@ -1,0 +1,17 @@
+exit: 255
+files: 
+--- stdout
+--- stderr
+{
+  "module": null,
+  "kind": "Command Line Arguments Error",
+  "text": [
+    { "type": "text", "content": "Failed to read file " },
+    { "type": "code", "content": "DoesNotExist.zum" },
+    { "type": "text", "content": ":" },
+    { "type": "break" },
+    { "type": "text", "content": "No such file or directory" }
+  ],
+  "span": null,
+  "context": null
+}

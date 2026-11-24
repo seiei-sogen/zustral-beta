@@ -23,10 +23,6 @@ type target =
   | Executable of { bin_path: string; entrypoint: entrypoint; }
   | CStandalone of { output_path: string; entrypoint: entrypoint option; }
 
-type error_reporting_mode =
-  | ErrorReportPlain
-  | ErrorReportJson
-
 type cmd =
   | HelpCommand
   | VersionCommand
@@ -34,7 +30,6 @@ type cmd =
   | WholeProgramCompile of {
       modules: mod_source list;
       target: target;
-      error_reporting_mode: error_reporting_mode;
     }
 
 let check_leftovers (arglist: arglist): unit =
@@ -121,35 +116,30 @@ let parse_target_type (arglist: arglist): (arglist * target) =
         an entrypoint. *)
      parse_executable_target arglist
 
-let parse_error_reporting_mode (arglist: arglist): (arglist * error_reporting_mode) =
+(* The value of `--error-format` must name a format. Which format it names is
+   read from the arguments before they are parsed, so that an error in them is
+   in that format too (ErrorReportingModeOfArguments, issue #174). *)
+let pop_error_format_flag (arglist: arglist): arglist =
   match pop_value_flag arglist "error-format" with
-  | Some (arglist, value) ->
-     (* An explicit error reporting mode was passed. *)
-     (match value with
-      | "plain" ->
-         (* Report errors in plain text. *)
-         (arglist, ErrorReportPlain)
-      | "json" ->
-         (* Report errors in JSON. *)
-         (arglist, ErrorReportJson)
-      | _ ->
-         cli_error NoSpan (UnknownErrorReportingMode value))
+  | Some (arglist, ("plain" | "json")) ->
+     arglist
+  | Some (_, value) ->
+     cli_error NoSpan (UnknownErrorReportingMode value)
   | None ->
-     (* The default target is plain text errors. *)
-     (arglist, ErrorReportPlain)
+     arglist
 
 let parse_compile_command' (arglist: arglist): (arglist * cmd) =
   (* Parse module list *)
   let (arglist, modules): (arglist * string list) = pop_positional arglist in
   let modules: mod_source list = List.map parse_mod_source modules in
-  let (arglist, error_reporting_mode) = parse_error_reporting_mode arglist in
+  let arglist: arglist = pop_error_format_flag arglist in
   (* There must be at least one module. *)
   if ((List.length modules) < 1) then
     cli_error NoSpan MissingModule
   else
     (* Parse the target type. *)
     let (arglist, target): (arglist * target) = parse_target_type arglist in
-    (arglist, WholeProgramCompile { modules = modules; target = target; error_reporting_mode = error_reporting_mode; })
+    (arglist, WholeProgramCompile { modules = modules; target = target; })
 
 let parse_compile_command (arglist: arglist): (arglist * cmd) =
   match pop_bool_flag arglist "help" with

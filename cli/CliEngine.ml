@@ -71,18 +71,6 @@ let parse_source_files (mods: mod_source list): (Pipeline.module_source list * s
 
 (* Execution *)
 
-(** Write the error to stderr, then exit with a failure status. *)
-let report_and_exit (mode: error_reporting_mode) (error: zustral_error): 'a =
-  let text: string =
-    match mode with
-    | ErrorReportPlain ->
-       render_error_to_plain error
-    | ErrorReportJson ->
-       Yojson.Basic.pretty_to_string (render_error_to_json error)
-  in
-  Printf.eprintf "%s" text;
-  exit (-1)
-
 open Outcome.Syntax
 
 let rec exec (cmd: cmd): unit =
@@ -93,8 +81,8 @@ let rec exec (cmd: cmd): unit =
      print_version ()
   | CompileHelp ->
      print_compile_usage ()
-  | WholeProgramCompile { modules; target; error_reporting_mode } ->
-     exec_compile modules target error_reporting_mode
+  | WholeProgramCompile { modules; target } ->
+     exec_compile modules target
 
 and print_usage _: unit =
   print_endline ("zustral " ^ version_string);
@@ -132,18 +120,18 @@ and print_compile_usage _: unit =
   print_endline "              both an interface and body file, or 'file.zum' for";
   print_endline "              modules with only a body."
 
-and exec_compile (modules: mod_source list) (target: target) (error_reporting_mode: error_reporting_mode): unit =
+and exec_compile (modules: mod_source list) (target: target): unit =
   (* Parse source files *)
   let (mods, source_map): (Pipeline.module_source list * source_map) = parse_source_files modules in
-  (* No error leaves the compiler as an exception. If a bug in it lets one
-     out, it is reported here like a returned one, in the format asked for. *)
+  (* The compiler returns its errors. An exception that a bug in it lets out
+     goes on to Cli.main, which reports it as an internal error. *)
   match Result.join (Outcome.catch (fun () -> exec_target mods target)) with
   | Ok () ->
      ()
   | Error (first, _) ->
      (* The compiler stops at its first error (issue #57), so there are none
-        after it. *)
-     report_and_exit error_reporting_mode (try_adding_source_ctx first source_map)
+        after it. Cli.main reports it, as it reports every error. *)
+     raise (Zustral_error (try_adding_source_ctx first source_map))
 
 and try_adding_source_ctx (error: zustral_error) (source_map: source_map): zustral_error =
   let (ZustralError { location; _ }) = error in

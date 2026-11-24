@@ -1,0 +1,1 @@
+Shows that the error of an `--error-format` given twice is in JSON when one of them is `--error-format=json` (issue #174). The compiler fails while it reads the flag; the rule that any argument `--error-format=json` makes every error JSON settles the format.
