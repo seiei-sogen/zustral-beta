@@ -1,6 +1,5 @@
 _build
 zustral
-error.html
 *~
 lib/BuiltInModules.ml
 FAILURES.txt
