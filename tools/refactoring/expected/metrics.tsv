@@ -91,7 +91,7 @@ lib/TypeParser.ml	329	10	0	0	0	2	0	0	0	0	0
 lib/TypeReplace.ml	212	0	0	0	0	0	0	0	0	0	0
 lib/TypeSignature.ml	23	0	0	0	0	0	0	0	0	0	0
 lib/TypeStripping.ml	82	1	0	0	0	0	0	1	0	0	0
-lib/TypeSystem.ml	104	0	0	0	0	0	0	0	0	0	0
+lib/TypeSystem.ml	105	0	0	0	0	0	0	0	0	0	0
 lib/TypeVarSet.ml	16	0	0	0	0	0	0	0	0	0	0
 lib/TypeclassNamedByConstraint.ml	26	0	0	0	0	0	0	0	0	0	0
 lib/TypingPass.ml	816	36	0	0	0	1	0	0	0	0	0

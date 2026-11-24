@@ -12,11 +12,6 @@ module body Test is
         return x + 1;
     end;
 
-    generic [T: Free]
-    function same(a: T, b: T): Bool is
-        return a = b;
-    end;
-
     function main(): ExitCode is
         let half: Float32 := 0.5;
         printLn(half < 1.0);
@@ -29,7 +24,6 @@ module body Test is
         end borrow;
         let f: Fn[Int32, Int32] := inc;
         printLn(f = f);
-        printLn(same(x, x));
         return ExitSuccess();
     end;
 end module body.

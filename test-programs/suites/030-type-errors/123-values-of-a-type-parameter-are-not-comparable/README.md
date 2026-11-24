@@ -1,0 +1,1 @@
+Test that two values of a type parameter cannot be compared (issue #125). Before, `a = b` passed the type check of the generic function, and a call with a record as `T` failed in the C compile with `invalid operands to binary ==`. A generic function must compile for every type argument or for none, so the comparison is an error at the function, whatever the calls pass.
