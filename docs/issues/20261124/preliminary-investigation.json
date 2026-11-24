@@ -1,5 +1,5 @@
 {
-  "base_commit": "6cd985165033cb13c24bb65674f2ca0a72ac77a1",
+  "base_commit": "ad70dac8c57d1e2f24032f17ede18b695eb1b92b",
   "issues": [
     {
       "number": 33,
@@ -120,8 +120,8 @@
       "title": "線形性の検査が、1つの関数の中の変数の数の3乗で遅くなる（#143 の残り）",
       "summary": "線形性の検査が、変数の数の3乗で遅くなる。",
       "depends_on": [],
-      "status": "queued",
-      "reason": "README の「次にやること」の3番。残っている不具合。"
+      "status": "done",
+      "reason": "PR を立てた。計画は issue-177/fix-plan.adoc。"
     },
     {
       "number": 38,
@@ -512,29 +512,21 @@
     }
   ],
   "next_issue": {
-    "number": 175,
-    "current_behavior": "4つの場合を、直す前のコンパイラ（d69429bd）で実行して確かめた。(1) `generic [A: Free] instance TC(Int32)` は宣言が通り、メソッドを呼ぶと単相化の段で `Parameter list and argument list don't have the same length` になる。(2) `method answer(): Int32` は宣言が通り、どの呼び出しも `No binding for this parameter: T` になる。(3) `generic [R: Region(Show)]` は通る。(4) インスタンスの型引数の制約のエラーが「The type parameter `U` of `Show`」と、型クラスを持ち主として言う。",
+    "number": 177,
+    "current_behavior": "`main` に変数を N 個置くプログラム（#143 の形）のコンパイルの全体が、直す前のコンパイラで、800 個で 0.91 秒、1600 個で 5.04 秒かかる（1回ずつの計測。サブエージェントの計測では、5 回の中央値で 0.889 秒と 4.890 秒）。callgrind では、800 個のとき、命令数の 70.5% が線形性の検査で、ほとんどが LinearityCheck.get_entry である。",
     "related_code": [
-      "lib/TypeClasses.ml: check_instance_argument_has_right_shape",
-      "lib/ExtractionPass.ml: check_constraints_name_typeclasses",
-      "lib/TypeclassNamedByConstraint.ml",
-      "lib/TypeErrors.ml",
-      "lib/TypeCheckExpr.ml: make_substs",
-      "lib/Monomorphize.ml: make_bindings"
+      "lib/LinearityCheck.ml: check_expr, check_var_in_expr, count, get_entry, 状態の表（リスト）"
     ],
     "related_tests": [
-      "test-programs/suites/033-type-checker-errors/004 と 007",
-      "test-programs/suites/031-declaration-errors/074",
-      "test-programs/suites/037-typeclass-and-environment-paths/050 と 051",
-      "test/UnexecutedDeclarationsTest.ml"
+      "test-programs/suites/006-linearity（エラーが名指す変数の順）"
     ],
     "affected_ci_checks": [
       "tools/refactoring/measure.sh の記録",
-      "エラーメッセージにテストがあること（プログラムから届かなくなる文面が2つ）",
-      "tools/refactoring/coverage.sh"
+      "tools/refactoring/coverage.sh（使わない枝を残せない）",
+      "base ブランチとの等価性（生成する C が変わらないこと）"
     ],
     "risks": [
-      "型クラスの型引数を使わないメソッドと、引数に現れない型引数を持つインスタンスを宣言していたプログラムが、宣言の時点で通らなくなる。どちらも、呼ぶとエラーになっていた。"
+      "エラーが名指す変数の順が変わると、文面が変わる。表の行の順を、直す前のリストの順と同じに保つ。"
     ]
   }
 }

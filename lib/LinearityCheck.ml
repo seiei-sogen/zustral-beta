@@ -7,6 +7,7 @@
 *)
 
 open Identifier
+open IdentifierMap
 open Stages.Tast
 open Type
 open TypeSystem
@@ -40,25 +41,35 @@ let universe_linear_ish = function
   | TypeUniverse -> true
   | FreeUniverse | RegionUniverse -> false
 
-type state_tbl = StateTable of (identifier * ty * var_state) list
+(* A variable in the state table, with the number of the change to the table
+   that last added it or set its state. *)
+type state_row = { row_type: ty; row_state: var_state; row_last_change: int }
+
+(* The rows are found by name, so that a lookup does not grow with the number
+   of variables in scope (issue #177). When several variables are wrong, the
+   checks report them from the one changed last: the order the table had when
+   it was a list, and each change put its variable at the head. *)
+type state_tbl = { rows: state_row IdentifierMap.t; last_change: int }
+
+let empty_tbl: state_tbl = { rows = IdentifierMap.empty; last_change = 0 }
+
+(* The variables from the one changed last. *)
+let table_rows (tbl: state_tbl): (identifier * ty * var_state) list =
+  IdentifierMap.bindings tbl.rows
+  |> List.sort (fun (_, a) (_, b) -> compare b.row_last_change a.row_last_change)
+  |> List.map (fun (name, row) -> (name, row.row_type, row.row_state))
 
 let show_state_tbl (tbl: state_tbl): string =
-  let (StateTable entries) = tbl in
   "Entries:\n"
-  ^ (String.concat "\n" (List.map (fun (n, _, v) -> (ident_string n) ^ "\t" ^ (show_var_state v)) entries))
+  ^ (String.concat "\n" (List.map (fun (n, _, v) -> (ident_string n) ^ "\t" ^ (show_var_state v)) (table_rows tbl)))
 
-let empty_tbl: state_tbl = StateTable []
-
-let table_rows (tbl: state_tbl): (identifier * ty * var_state) list =
-  let (StateTable rows) = tbl in
-  rows
+(* The table with the variable `name` in the given state, as its latest change. *)
+let set_variable_as_latest_change (tbl: state_tbl) (name: identifier) (ty: ty) (state: var_state): state_tbl =
+  let change: int = tbl.last_change + 1 in
+  { rows = IdentifierMap.add name { row_type = ty; row_state = state; row_last_change = change } tbl.rows; last_change = change }
 
 let get_entry (tbl: state_tbl) (name: identifier): (ty * var_state) option =
-  match (List.find_opt (fun (n, _, _) -> equal_identifier name n) (table_rows tbl)) with
-  | Some (_, ty, state) ->
-     Some (ty, state)
-  | None ->
-     None
+  Option.map (fun row -> (row.row_type, row.row_state)) (IdentifierMap.find_opt name tbl.rows)
 
 let get_entry_or_fail (place: place) (tbl: state_tbl) (name: identifier): (ty * var_state) =
   match get_entry tbl name with
@@ -73,10 +84,9 @@ let get_entry_or_fail (place: place) (tbl: state_tbl) (name: identifier): (ty * 
           ^ (show_state_tbl tbl))
 
 let add_entry (place: place) (tbl: state_tbl) (name: identifier) (ty: ty): state_tbl =
-  let (StateTable rows) = tbl in
   match get_entry tbl name with
   | None ->
-     StateTable ((name, ty, Unconsumed) :: rows)
+     set_variable_as_latest_change tbl name ty Unconsumed
   | Some _ ->
      (* The justification for this being an internal error is that the compiler
         should already have caught a duplicate variable. *)
@@ -93,40 +103,21 @@ let need_not_be_consumed (ty: ty): bool =
      false
 
 let trim_free (tbl: state_tbl): state_tbl =
-  let (StateTable entries) = tbl in
-  let trim tuple =
-    let (_, ty, _) = tuple in
-    if universe_linear_ish (type_universe ty) then
-      Some tuple
-    else
-      None
-  in
-  StateTable (List.filter_map trim entries)
+  { tbl with rows = IdentifierMap.filter (fun _ row -> universe_linear_ish (type_universe row.row_type)) tbl.rows }
 
 (* A name this pass updates or removes is in the table: the statement that
    declares it added it, and every statement removes only the names it added
    itself, which `add_entry` keeps distinct. *)
 let update_tbl (place: place) (tbl: state_tbl) (name: identifier) (state: var_state): state_tbl =
   let (ty, _) = get_entry_or_fail place tbl name in
-  let (StateTable rows) = tbl in
-  let other_entries = List.filter (fun (n, _, _) -> not (equal_identifier name n)) rows
-  in
-  StateTable ((name, ty, state) :: other_entries)
+  set_variable_as_latest_change tbl name ty state
 
 let remove_entry (place: place) (tbl: state_tbl) (name: identifier): state_tbl =
-  match get_entry_or_fail place tbl name with
-  | (ty, state) ->
-     if is_consumed state || need_not_be_consumed ty then
-       let (StateTable rows) = tbl in
-       let others = List.filter (fun (n, _, _) -> not (equal_identifier name n)) rows in
-       StateTable others
-     else
-       if universe_linear_ish (type_universe ty) then
-         linearity_error place (ForgotToConsume name)
-       else
-         let (StateTable rows) = tbl in
-         let others = List.filter (fun (n, _, _) -> not (equal_identifier name n)) rows in
-         StateTable others
+  let (ty, state) = get_entry_or_fail place tbl name in
+  if not (is_consumed state || need_not_be_consumed ty) && universe_linear_ish (type_universe ty) then
+    linearity_error place (ForgotToConsume name)
+  else
+    { tbl with rows = IdentifierMap.remove name tbl.rows }
 
 let rec remove_entries (place: place) (tbl: state_tbl) (names: identifier list): state_tbl =
   match names with
@@ -178,56 +169,57 @@ let merge_if_expression_branches (then_branch: appearances) (else_branch: appear
   | (OnEveryPath _, OnSomePathsOnly { parts_at; _ }) ->
      OnSomePathsOnly { at_most; parts_at }
 
-(* The appearances in the right operand of `and` or of `or`. The evaluation
-   skips that operand when the left one decides the result. *)
+(* The appearances of a variable that the right operand of `and` or of `or`
+   uses. The evaluation skips that operand when the left one decides the
+   result. *)
 let in_right_operand_evaluated_on_some_paths (expression: LinearityErrors.partly_evaluated_expression) (right_operand: appearances): appearances =
   match right_operand with
   | OnEveryPath times ->
-     if times = 0 then
-       right_operand
-     else
-       OnSomePathsOnly { at_most = times; parts_at = expression }
+     OnSomePathsOnly { at_most = times; parts_at = expression }
   | OnSomePathsOnly _ ->
      right_operand
 
-let merge_list (l: appearances list): appearances =
-  List.fold_left merge zero_appearances l
+(* The appearances of each variable that an expression uses. A variable the
+   expression does not use has no entry, so it costs nothing to check
+   (issue #177). *)
+type appearances_by_variable = appearances IdentifierMap.t
+
+(* Combines, variable by variable, the appearances in two parts of an
+   expression. A variable that one part does not use appears zero times in it. *)
+let combine_by_variable (combine: appearances -> appearances -> appearances) (a: appearances_by_variable) (b: appearances_by_variable): appearances_by_variable =
+  IdentifierMap.merge (fun _ (in_a: appearances option) (in_b: appearances option) ->
+      Some (combine (Option.value in_a ~default:zero_appearances) (Option.value in_b ~default:zero_appearances)))
+    a b
+
+let merge_list (l: appearances_by_variable list): appearances_by_variable =
+  List.fold_left (combine_by_variable merge) IdentifierMap.empty l
 
 (* Counting appearances of variables in expressions *)
 
-let rec count (name: identifier) (expr: texpr): appearances =
-  let c = count name in
+let rec count_appearances_of_variables (expr: texpr): appearances_by_variable =
+  let c = count_appearances_of_variables in
   match expr with
   | TNilConstant ->
-     zero_appearances
+     IdentifierMap.empty
   | TBoolConstant _ ->
-     zero_appearances
+     IdentifierMap.empty
   | TIntConstant _ ->
-     zero_appearances
+     IdentifierMap.empty
   | TFloatConstant _ ->
-     zero_appearances
+     IdentifierMap.empty
   | TStringConstant _ ->
-     zero_appearances
+     IdentifierMap.empty
   | TConstVar _ ->
      (* Constants variables can't be linear. *)
-     zero_appearances
-  | TParamVar (name', _) ->
-     if equal_identifier name name' then
-       consumed_once
-     else
-       zero_appearances
-  | TLocalVar (name', _) ->
-     if equal_identifier name name' then
-       consumed_once
-     else
-       zero_appearances
-  | TTemporary (name', _) ->
-     if equal_identifier name name' then
-       consumed_once
-     else
-       zero_appearances
+     IdentifierMap.empty
+  | TParamVar (name, _) ->
+     IdentifierMap.singleton name consumed_once
+  | TLocalVar (name, _) ->
+     IdentifierMap.singleton name consumed_once
+  | TTemporary (name, _) ->
+     IdentifierMap.singleton name consumed_once
   | TFunVar _ ->
-     zero_appearances
+     IdentifierMap.empty
   | TFuncall (_, _, args, _, _, _) ->
      merge_list (List.map c args)
   | TMethodCall (_, _, _, args, _, _, _) ->
@@ -239,17 +231,17 @@ let rec count (name: identifier) (expr: texpr): appearances =
   | TCast (e, _) | TImplicitCast (e, _) ->
      c e
   | TComparison (_, lhs, rhs) ->
-     merge (c lhs) (c rhs)
+     combine_by_variable merge (c lhs) (c rhs)
   | TConjunction (lhs, rhs) ->
-     merge (c lhs) (in_right_operand_evaluated_on_some_paths ConjunctionRightOperand (c rhs))
+     combine_by_variable merge (c lhs) (IdentifierMap.map (in_right_operand_evaluated_on_some_paths ConjunctionRightOperand) (c rhs))
   | TDisjunction (lhs, rhs) ->
-     merge (c lhs) (in_right_operand_evaluated_on_some_paths DisjunctionRightOperand (c rhs))
+     combine_by_variable merge (c lhs) (IdentifierMap.map (in_right_operand_evaluated_on_some_paths DisjunctionRightOperand) (c rhs))
   | TNegation e ->
      c e
   | TArithmeticNegation e ->
      c e
   | TIfExpression (e, t, f) ->
-     merge (c e) (merge_if_expression_branches (c t) (c f))
+     combine_by_variable merge (c e) (combine_by_variable merge_if_expression_branches (c t) (c f))
   | TRecordConstructor (_, args) ->
      merge_list (List.map (fun (_, e) -> c e) args)
   | TUnionConstructor { args; _ } ->
@@ -259,16 +251,16 @@ let rec count (name: identifier) (expr: texpr): appearances =
   | TDeref (e, _) ->
      c e
   | TSizeOf _ ->
-     zero_appearances
+     IdentifierMap.empty
   | TSlotAccessor (e, _, _) ->
      c e
   | TPointerSlotAccessor (e, _, _) ->
      c e
   | TArrayIndex (e, i, _, _, _) ->
-     merge (c e) (c i)
+     combine_by_variable merge (c e) (c i)
   | TSpanIndex (e, i, _, _, _) ->
-     merge (c e) (c i)
- 
+     combine_by_variable merge (c e) (c i)
+
 (* Utilities *)
 
 let get_state (place: place) (tbl: state_tbl) (name: identifier): var_state =
@@ -276,20 +268,16 @@ let get_state (place: place) (tbl: state_tbl) (name: identifier): var_state =
   state
 
 type partitions =
-  | Zero
   | One
   | MoreThanOne
 
-(* The argument counts appearances: a sum of zeros and ones, so never
-   negative. Everything below one is Zero. *)
+(* The argument counts the appearances of a variable that the expression
+   uses: at least one. *)
 let partition (n: int): partitions =
   if n > 1 then
     MoreThanOne
   else
-    if n = 1 then
-      One
-    else
-      Zero
+    One
 
 (* Table consistency *)
 
@@ -324,9 +312,8 @@ let case_branch_tables_are_consistent (place: place) (lst: state_tbl list): unit
 
 (* Linearity checking in expressions *)
 
-let rec check_var_in_expr (place: place) (tbl: state_tbl) (name: identifier) (ty: ty) (expr: texpr): state_tbl =
-  (* Count the appearances of the variable in the expression. *)
-  match count name expr with
+let rec check_var_in_expr (place: place) (tbl: state_tbl) (name: identifier) (ty: ty) (appearances: appearances): state_tbl =
+  match appearances with
   | OnSomePathsOnly { at_most; parts_at } ->
      if at_most > 1 || need_not_be_consumed ty then
        (* Checked as if every path consumed the variable `at_most` times. More
@@ -351,25 +338,17 @@ and check_var_consumed_on_every_path (place: place) (tbl: state_tbl) (name: iden
   match tup with
   (*       State        Consumed  *)
   (* ---------------|-------------*)
-  | (     Unconsumed,         Zero) -> (* Not yet consumed, not consumed. *)
-     tbl
   | (     Unconsumed,          One) -> (* Not yet consumed, consumed once. *)
      consume_once place tbl name ty
   | (     Unconsumed,  MoreThanOne) -> (* Not yet consumed, consumed more than once. *)
      error_consumed_more_than_once place name ty;
      tbl
-  | (   BorrowedRead,         Zero) -> (* Read borrowed, and not consumed. *)
-     tbl
-  | (   BorrowedRead,            _) -> (* Read borrowed, and consumed zero or more times. *)
+  | (   BorrowedRead,            _) -> (* Read borrowed, and consumed once or more. *)
      error_read_borrowed_and_consumed place name ty;
-     tbl
-  | (  BorrowedWrite,         Zero) -> (* Write borrowed, and not consumed. *)
      tbl
   | (  BorrowedWrite,            _) -> (* Write borrowed, and used: an error in every universe. *)
      error_write_borrowed_and_used place name ty
-  | (       Consumed,         Zero) -> (* Already consumed, and unused. *)
-     tbl
-  | (       Consumed,            _) -> (* Already consumed, and consumed again zero or more times. *)
+  | (       Consumed,            _) -> (* Already consumed, and consumed again once or more. *)
      (* Only a variable of a linear type is ever Consumed (`consume_once`). *)
      linearity_error place (AlreadyConsumed name)
 
@@ -400,14 +379,18 @@ and error_write_borrowed_and_used (place: place) (name: identifier) (ty: ty): st
   else
     linearity_error place (ReadWhileBorrowedWrite name)
 
+(* Checks each variable of the table that the expression uses, from the one
+   changed last, so an error names the same variable as when the check went
+   through the whole table. A variable that the expression does not use keeps
+   its state. The variable of a `for` loop is not in the table. *)
 let check_expr (place: place) (tbl: state_tbl) (expr: texpr): state_tbl =
-  (* For each variable in the table, check if the variable is used correctly in
-     the expression. *)
-  let vars: (identifier * ty) list = List.map (fun (name, ty, _) -> (name, ty)) (tbl_to_list tbl) in
-  let f (tbl: state_tbl) (name, ty): state_tbl =
-    check_var_in_expr place tbl name ty expr
+  let used: (state_row * identifier * appearances) list =
+    IdentifierMap.bindings (count_appearances_of_variables expr)
+    |> List.filter_map (fun (name, appearances) ->
+           Option.map (fun row -> (row, name, appearances)) (IdentifierMap.find_opt name tbl.rows))
+    |> List.sort (fun (a, _, _) (b, _, _) -> compare b.row_last_change a.row_last_change)
   in
-  Util.iter_with_context f tbl vars
+  Util.iter_with_context (fun tbl (row, name, appearances) -> check_var_in_expr place tbl name row.row_type appearances) tbl used
 
 (* Linearity checking *)
 

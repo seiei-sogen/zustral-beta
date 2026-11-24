@@ -1,0 +1,1 @@
+Test that the error for a loop that consumes several linear variables lists them from the one whose state changed last.
