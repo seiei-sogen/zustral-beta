@@ -1,0 +1,489 @@
+{
+  "base_commit": "3d2905f3a951ba1da461cc2dd41dc6ab0dab253c",
+  "issues": [
+    {
+      "number": 33,
+      "title": "コンパイラが一時ファイルを残し、失敗するとカレントディレクトリにファイルを書く",
+      "summary": "一時ファイルを残すオプションと、error.html を出すオプションを足すかを決める。既定の振る舞い（消す、書かない）は直してある。",
+      "depends_on": [],
+      "status": "done",
+      "reason": "PR を立てた。どちらのオプションも足さないと判断した。計画は issue-33/fix-plan.adoc。"
+    },
+    {
+      "number": 125,
+      "title": "レコードどうしの `=` が型検査を通り、C のコンパイルで失敗する",
+      "summary": "型変数の値どうしの = を断るかを決める。レコード、union、スパンの = は、もう型エラーになる。",
+      "depends_on": [],
+      "status": "queued",
+      "reason": "README の「次にやること」の2番。判断が要る issue。is_comparable の1行と、テストの直し。"
+    },
+    {
+      "number": 176,
+      "title": "自分を呼ぶたびに型引数が大きくなる汎用の関数で、コンパイルが終わらない",
+      "summary": "型引数が大きくなり続ける汎用の関数で、コンパイルが終わらない。単相化の上限で止めるか、型検査で断るかを決める。",
+      "depends_on": [],
+      "status": "queued",
+      "reason": "README の「次にやること」の2番。判断が要る issue。"
+    },
+    {
+      "number": 60,
+      "title": "`Printable` の `printSpan` が、`Nat8` 以外の型では何も出力しない",
+      "summary": "printSpan を Printable から外す。規則を緩めるか、Nat8 だけが実装する型クラスを足すかを決める。",
+      "depends_on": [],
+      "status": "queued",
+      "reason": "README の「次にやること」の2番。判断が要る issue。"
+    },
+    {
+      "number": 179,
+      "title": "要検討: 同じ文の中で書き込みの借用をしている変数を、読み取れてよいか",
+      "summary": "同じ文の中で書き込みの借用をしている変数を、値として読めてよいかを決める。",
+      "depends_on": [],
+      "status": "queued",
+      "reason": "README の「次にやること」の2番。判断が要る issue。線形性の検査に規則を足すことになるので、2番の中では大きい。"
+    },
+    {
+      "number": 90,
+      "title": "型の書き方の検査に抜けがある（組み込みの型への引数、領域の位置、制約の名前、借用の型注釈）",
+      "summary": "型の書き方の検査の抜け。5項目のうち4項目は直っている。残りは、領域を値の型として書けること（f(r: Static)）を断るかの判断だけである。",
+      "depends_on": [],
+      "status": "queued",
+      "reason": "README の「次にやること」の2番。判断が要る issue。#144 の9と同じ判断。"
+    },
+    {
+      "number": 144,
+      "title": "実行されない行にテストを足して見つかった、おかしい振る舞い（10 件）",
+      "summary": "おかしい振る舞い13件。9（型を書く位置に領域を書ける）のほかは直っている。",
+      "depends_on": [
+        90
+      ],
+      "status": "queued",
+      "reason": "README の「次にやること」の2番。判断が要る issue。#90 と同じ判断なので、#90 の後。"
+    },
+    {
+      "number": 171,
+      "title": "文字列リテラルの知らないエスケープ（`\\\\q`）が、エラーにならない",
+      "summary": "文字列リテラルの知らないエスケープが、エラーにならない。",
+      "depends_on": [],
+      "status": "queued",
+      "reason": "README の「次にやること」の3番。残っている不具合。"
+    },
+    {
+      "number": 173,
+      "title": "C コンパイラが stderr に多く書くと、コンパイラが止まったまま終わらない",
+      "summary": "C コンパイラが stderr に多く書くと、コンパイラが止まったまま終わらない。",
+      "depends_on": [],
+      "status": "queued",
+      "reason": "README の「次にやること」の3番。残っている不具合。"
+    },
+    {
+      "number": 175,
+      "title": "型クラスとインスタンスの宣言の検査に、抜けが4つ残っている",
+      "summary": "型クラスとインスタンスの宣言の検査に、抜けが4つ残っている。",
+      "depends_on": [],
+      "status": "queued",
+      "reason": "README の「次にやること」の3番。残っている不具合。"
+    },
+    {
+      "number": 172,
+      "title": "エラーの位置がずれる場合が、4つ残っている（先頭の空行、閉じていない文字列、組み込みのモジュール、本体の定義）",
+      "summary": "エラーの位置がずれる場合が、4つ残っている。",
+      "depends_on": [],
+      "status": "queued",
+      "reason": "README の「次にやること」の3番。残っている不具合。"
+    },
+    {
+      "number": 178,
+      "title": "借用のエラーの文面: 取り込んだ定数の借用が「変数が見つからない」になり、無名の借用の領域が `_tmp_region_N` と出る",
+      "summary": "借用のエラーの文面。取り込んだ定数の借用と、無名の借用の領域の名前。",
+      "depends_on": [],
+      "status": "queued",
+      "reason": "README の「次にやること」の3番。残っている不具合。"
+    },
+    {
+      "number": 87,
+      "title": "位置の出ないエラーが、少なくとも10種類ある",
+      "summary": "位置の出ないエラー。残りは、エントリポイントが関数でない場合と、ない場合。",
+      "depends_on": [],
+      "status": "queued",
+      "reason": "README の「次にやること」の3番。残っている不具合。"
+    },
+    {
+      "number": 174,
+      "title": "内部エラーとコマンドラインのエラーが、`--error-format=json` を付けても平文で出る",
+      "summary": "内部エラーとコマンドラインのエラーが、--error-format=json を付けても平文で出る。",
+      "depends_on": [],
+      "status": "queued",
+      "reason": "README の「次にやること」の3番。残っている不具合。"
+    },
+    {
+      "number": 177,
+      "title": "線形性の検査が、1つの関数の中の変数の数の3乗で遅くなる（#143 の残り）",
+      "summary": "線形性の検査が、変数の数の3乗で遅くなる。",
+      "depends_on": [],
+      "status": "queued",
+      "reason": "README の「次にやること」の3番。残っている不具合。"
+    },
+    {
+      "number": 38,
+      "title": "リテラルの形（16進、文字など）が、型検査に届かない",
+      "summary": "リテラルの形（16進、文字など）を、型検査まで運ぶ。",
+      "depends_on": [],
+      "status": "queued",
+      "reason": "README の「次にやること」の4番。リテラルと型の流れの残り。"
+    },
+    {
+      "number": 37,
+      "title": "リテラルだけの式の畳み込みが、/ を型検査から隠す",
+      "summary": "リテラルだけの式を、型検査より前に畳み込まない。",
+      "depends_on": [
+        38
+      ],
+      "status": "queued",
+      "reason": "README の「次にやること」の4番。リテラルと型の流れの残り。"
+    },
+    {
+      "number": 35,
+      "title": "if 式の枝に、期待する型が届かない",
+      "summary": "if 式の枝に、期待する型を届ける。",
+      "depends_on": [],
+      "status": "queued",
+      "reason": "README の「次にやること」の4番。リテラルと型の流れの残り。"
+    },
+    {
+      "number": 39,
+      "title": "union の C のタグが、宣言の逆順に並ぶ",
+      "summary": "union の C のタグを、宣言の順に並べる。",
+      "depends_on": [],
+      "status": "queued",
+      "reason": "README の「次にやること」の4番。リテラルと型の流れの残り。"
+    },
+    {
+      "number": 68,
+      "title": "Decimal: 実行時の C を、clang と `__int128` のない環境で確かめる",
+      "summary": "Decimal の実行時の C を、clang と __int128 のない環境で確かめる。対応する C コンパイラと環境を決める。",
+      "depends_on": [],
+      "status": "skipped",
+      "reason": "#71 の「先に決めてもらうこと」。対応する環境は、所有者が決める。"
+    },
+    {
+      "number": 46,
+      "title": "要検討: 組み込みモジュールの名前空間と、言語の名前を Austral のままにするか",
+      "summary": "組み込みモジュールの名前空間を決める。",
+      "depends_on": [],
+      "status": "skipped",
+      "reason": "#71 の「先に決めてもらうこと」。名前は、所有者が決める。"
+    },
+    {
+      "number": 71,
+      "title": "追跡: 修正と Decimal 実装の計画",
+      "summary": "修正と Decimal 実装の計画を追跡する。",
+      "depends_on": [],
+      "status": "skipped",
+      "reason": "追跡のための issue で、1つの PR では閉じない。"
+    },
+    {
+      "number": 73,
+      "title": "Decimal 実装 D1: 実行時の算術を、本番のツリーに入れる",
+      "summary": "Decimal 実装の1段。",
+      "depends_on": [
+        68,
+        46
+      ],
+      "status": "skipped",
+      "reason": "README の「次にやること」の5番。#71 の「先に決めてもらうこと」（#68、#46）に依存する。"
+    },
+    {
+      "number": 74,
+      "title": "Decimal 実装 D2: 型、`let` のリテラル、`printLn` を1本通す",
+      "summary": "Decimal 実装の1段。",
+      "depends_on": [
+        73
+      ],
+      "status": "skipped",
+      "reason": "README の「次にやること」の5番。#71 の「先に決めてもらうこと」（#68、#46）に依存する。"
+    },
+    {
+      "number": 75,
+      "title": "Decimal 実装 D3: リテラルを仕上げる",
+      "summary": "Decimal 実装の1段。",
+      "depends_on": [
+        74
+      ],
+      "status": "skipped",
+      "reason": "README の「次にやること」の5番。#71 の「先に決めてもらうこと」（#68、#46）に依存する。"
+    },
+    {
+      "number": 76,
+      "title": "Decimal 実装 D4: 加算、減算、符号の反転、比較",
+      "summary": "Decimal 実装の1段。",
+      "depends_on": [
+        75
+      ],
+      "status": "skipped",
+      "reason": "README の「次にやること」の5番。#71 の「先に決めてもらうこと」（#68、#46）に依存する。"
+    },
+    {
+      "number": 77,
+      "title": "Decimal 実装 D5: 乗算",
+      "summary": "Decimal 実装の1段。",
+      "depends_on": [
+        76
+      ],
+      "status": "skipped",
+      "reason": "README の「次にやること」の5番。#71 の「先に決めてもらうこと」（#68、#46）に依存する。"
+    },
+    {
+      "number": 78,
+      "title": "Decimal 実装 D6: `Austral.Decimal` と `divide`",
+      "summary": "Decimal 実装の1段。",
+      "depends_on": [
+        77
+      ],
+      "status": "skipped",
+      "reason": "README の「次にやること」の5番。#71 の「先に決めてもらうこと」（#68、#46）に依存する。"
+    },
+    {
+      "number": 79,
+      "title": "Decimal 実装 D7: 変換（`widen`、`exact`、`round`、`approximate`）",
+      "summary": "Decimal 実装の1段。",
+      "depends_on": [
+        78
+      ],
+      "status": "skipped",
+      "reason": "README の「次にやること」の5番。#71 の「先に決めてもらうこと」（#68、#46）に依存する。"
+    },
+    {
+      "number": 80,
+      "title": "Decimal 実装 D8: `checkedAdd` と `checkedSubtract`",
+      "summary": "Decimal 実装の1段。",
+      "depends_on": [
+        79
+      ],
+      "status": "skipped",
+      "reason": "README の「次にやること」の5番。#71 の「先に決めてもらうこと」（#68、#46）に依存する。"
+    },
+    {
+      "number": 81,
+      "title": "Decimal 実装 D9: `parse`",
+      "summary": "Decimal 実装の1段。",
+      "depends_on": [
+        80
+      ],
+      "status": "skipped",
+      "reason": "README の「次にやること」の5番。#71 の「先に決めてもらうこと」（#68、#46）に依存する。"
+    },
+    {
+      "number": 82,
+      "title": "Decimal 実装 D10: 型クラス、外部関数、名前の予約",
+      "summary": "Decimal 実装の1段。",
+      "depends_on": [
+        81
+      ],
+      "status": "skipped",
+      "reason": "README の「次にやること」の5番。#71 の「先に決めてもらうこと」（#68、#46）に依存する。"
+    },
+    {
+      "number": 83,
+      "title": "Decimal 実装 D11: 実装を仕様と突き合わせる",
+      "summary": "Decimal 実装の1段。",
+      "depends_on": [
+        82
+      ],
+      "status": "skipped",
+      "reason": "README の「次にやること」の5番。#71 の「先に決めてもらうこと」（#68、#46）に依存する。"
+    },
+    {
+      "number": 168,
+      "title": "`CIdent.zustral` と `CodeGen.zustral_prefix` を、何をするかが分かる名前に変える",
+      "summary": "`CIdent.zustral` と `CodeGen.zustral_prefix` を、何をするかが分かる名前に変える",
+      "depends_on": [],
+      "status": "skipped",
+      "reason": "名前の付け替え。README の「次にやること」の2番以降に挙がっていない。今回の指示（2番から順に進める）の範囲に入らない。"
+    },
+    {
+      "number": 139,
+      "title": "Decimal 仕様の Lean 形式化を取り込み、定理を証明する",
+      "summary": "Decimal 仕様の Lean 形式化を取り込み、定理を証明する",
+      "depends_on": [],
+      "status": "skipped",
+      "reason": "Lean の形式化の取り込み。1つの PR に収まらない。README の「次にやること」の2番以降に挙がっていない。今回の指示（2番から順に進める）の範囲に入らない。"
+    },
+    {
+      "number": 70,
+      "title": "Decimal: 後から足せる小さな拡張（定数でのコンパイル時計算、整数型で受ける `divide` と `widen`）",
+      "summary": "Decimal: 後から足せる小さな拡張（定数でのコンパイル時計算、整数型で受ける `divide` と `widen`）",
+      "depends_on": [
+        83
+      ],
+      "status": "skipped",
+      "reason": "README の6番（Decimal の拡張）。Decimal の実装（#73 から #83）に依存する。"
+    },
+    {
+      "number": 69,
+      "title": "Decimal: 外部関数とバイナリの入出力のために、メモリ上の並びを約束するか",
+      "summary": "Decimal: 外部関数とバイナリの入出力のために、メモリ上の並びを約束するか",
+      "depends_on": [
+        83
+      ],
+      "status": "skipped",
+      "reason": "README の6番（Decimal の拡張）。Decimal の実装（#73 から #83）に依存する。"
+    },
+    {
+      "number": 67,
+      "title": "Decimal: 演算の名前付き引数と、演算を関数の値として渡すこと",
+      "summary": "Decimal: 演算の名前付き引数と、演算を関数の値として渡すこと",
+      "depends_on": [
+        83
+      ],
+      "status": "skipped",
+      "reason": "README の6番（Decimal の拡張）。Decimal の実装（#73 から #83）に依存する。"
+    },
+    {
+      "number": 66,
+      "title": "Decimal: 絶対値、最小、最大、符号の判定がない",
+      "summary": "Decimal: 絶対値、最小、最大、符号の判定がない",
+      "depends_on": [
+        83
+      ],
+      "status": "skipped",
+      "reason": "README の6番（Decimal の拡張）。Decimal の実装（#73 から #83）に依存する。"
+    },
+    {
+      "number": 65,
+      "title": "Decimal: 10円、100円、1000円単位への丸め（単位を指定する丸め）",
+      "summary": "Decimal: 10円、100円、1000円単位への丸め（単位を指定する丸め）",
+      "depends_on": [
+        83
+      ],
+      "status": "skipped",
+      "reason": "README の6番（Decimal の拡張）。Decimal の実装（#73 から #83）に依存する。"
+    },
+    {
+      "number": 64,
+      "title": "Decimal: バイト列へ書き出す演算がない（出力レコード、CSV、stderr に出せない）",
+      "summary": "Decimal: バイト列へ書き出す演算がない（出力レコード、CSV、stderr に出せない）",
+      "depends_on": [
+        83
+      ],
+      "status": "skipped",
+      "reason": "README の6番（Decimal の拡張）。Decimal の実装（#73 から #83）に依存する。"
+    },
+    {
+      "number": 63,
+      "title": "Decimal: 結果の型を指定して掛けながら丸める乗算と、べき乗",
+      "summary": "Decimal: 結果の型を指定して掛けながら丸める乗算と、べき乗",
+      "depends_on": [
+        83
+      ],
+      "status": "skipped",
+      "reason": "README の6番（Decimal の拡張）。Decimal の実装（#73 から #83）に依存する。"
+    },
+    {
+      "number": 62,
+      "title": "Decimal: 割り切れなければ失敗する除算と、商と剰余を返す除算（按分の土台）",
+      "summary": "Decimal: 割り切れなければ失敗する除算と、商と剰余を返す除算（按分の土台）",
+      "depends_on": [
+        83
+      ],
+      "status": "skipped",
+      "reason": "README の6番（Decimal の拡張）。Decimal の実装（#73 から #83）に依存する。"
+    },
+    {
+      "number": 61,
+      "title": "Decimal: P と S を型変数にして、どの精度とスケールでも受ける関数を書けるようにする",
+      "summary": "Decimal: P と S を型変数にして、どの精度とスケールでも受ける関数を書けるようにする",
+      "depends_on": [
+        83
+      ],
+      "status": "skipped",
+      "reason": "README の6番（Decimal の拡張）。Decimal の実装（#73 から #83）に依存する。"
+    },
+    {
+      "number": 59,
+      "title": "定数の初期値に、他の定数を使った式を書けない。エラーに位置もない",
+      "summary": "定数の初期値に、他の定数を使った式を書けない。エラーに位置もない",
+      "depends_on": [],
+      "status": "skipped",
+      "reason": "README の「次にやること」の2番以降に挙がっていない。今回の指示（2番から順に進める）の範囲に入らない。"
+    },
+    {
+      "number": 58,
+      "title": "トラップのメッセージに、ソースの位置がない",
+      "summary": "トラップのメッセージに、ソースの位置がない",
+      "depends_on": [],
+      "status": "skipped",
+      "reason": "README の「次にやること」の2番以降に挙がっていない。今回の指示（2番から順に進める）の範囲に入らない。"
+    },
+    {
+      "number": 57,
+      "title": "コンパイルエラーが1回に1件しか出ない",
+      "summary": "コンパイルエラーが1回に1件しか出ない",
+      "depends_on": [],
+      "status": "skipped",
+      "reason": "README の「次にやること」の2番以降に挙がっていない。今回の指示（2番から順に進める）の範囲に入らない。"
+    },
+    {
+      "number": 56,
+      "title": "型の別名がない（`Decimal[13, 2]` を何度も書くことになる）",
+      "summary": "型の別名がない（`Decimal[13, 2]` を何度も書くことになる）",
+      "depends_on": [],
+      "status": "skipped",
+      "reason": "README の「次にやること」の2番以降に挙がっていない。今回の指示（2番から順に進める）の範囲に入らない。"
+    },
+    {
+      "number": 55,
+      "title": "型変数として宣言された欄に、外から届いた型が伝わらない（`Some(value => 5)` が `Option[Int64]` にならない）",
+      "summary": "型変数として宣言された欄に、外から届いた型が伝わらない（`Some(value => 5)` が `Option[Int64]` にならない）",
+      "depends_on": [],
+      "status": "skipped",
+      "reason": "README の「次にやること」の2番以降に挙がっていない。今回の指示（2番から順に進める）の範囲に入らない。"
+    },
+    {
+      "number": 44,
+      "title": "stdlib の Equality と Order に、インスタンスがほとんどない",
+      "summary": "stdlib の Equality と Order に、インスタンスがほとんどない",
+      "depends_on": [],
+      "status": "skipped",
+      "reason": "README の「次にやること」の2番以降に挙がっていない。今回の指示（2番から順に進める）の範囲に入らない。"
+    },
+    {
+      "number": 43,
+      "title": "代入の右辺を一時変数へ移す処理が守る性質を、end-to-end のテストが確かめていない",
+      "summary": "代入の右辺を一時変数へ移す処理が守る性質を、end-to-end のテストが確かめていない",
+      "depends_on": [],
+      "status": "skipped",
+      "reason": "README の「次にやること」の2番以降に挙がっていない。今回の指示（2番から順に進める）の範囲に入らない。"
+    },
+    {
+      "number": 21,
+      "title": "要検討: COBOL でよく書く金額計算を、Zustral でも正しく書けるようにする",
+      "summary": "要検討: COBOL でよく書く金額計算を、Zustral でも正しく書けるようにする",
+      "depends_on": [],
+      "status": "skipped",
+      "reason": "README の6番。デモで、Decimal の実装（5番）に依存する。"
+    },
+    {
+      "number": 20,
+      "title": "要検討: Zustral は「メモリを食いすぎるアプリ」の問題に効くのか",
+      "summary": "要検討: Zustral は「メモリを食いすぎるアプリ」の問題に効くのか",
+      "depends_on": [],
+      "status": "skipped",
+      "reason": "要検討の議論で、1つの PR に収まらない。"
+    }
+  ],
+  "next_issue": {
+    "number": 33,
+    "current_behavior": "既定の振る舞いは直っている。空の TMPDIR を指定して `zustral compile Ok.zum --entrypoint=Ok:main --output=ok`（成功、終了コード 0）と `zustral compile Bad.zum --entrypoint=Bad:main --output=bad`（型エラー、終了コード 255）を実行したあと、TMPDIR は空のままで、カレントディレクトリには `ok` のほかに何も増えない。`error.html` と `calltree.html` を書くコードは、`lib/`、`cli/`、`bin/` に残っていない（`grep -rn 'error.html\\|calltree' --include=*.ml .` が 0 件）。残る判断は、一時ファイルを残すオプションと `error.html` を出すオプションを足すかである。",
+    "related_code": [
+      "cli/CliEngine.ml: 生成した C の一時ファイルを Fun.protect で消す箇所（171 行から）",
+      ".gitignore: `error.html` の行"
+    ],
+    "related_tests": [
+      "test-programs/cli/047-html-characters-in-file-name（README が error.html に触れる）"
+    ],
+    "affected_ci_checks": [],
+    "risks": [
+      "オプションを足さないと決めるので、issue を閉じる根拠が判断だけになる。所有者が違う判断をしたら、issue を開き直す。"
+    ]
+  }
+}
