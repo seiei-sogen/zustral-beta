@@ -35,9 +35,9 @@ let desugar_decl (supply: Supply.t) (decl: C.combined_definition): SC.combined_d
      (SC.CInstance (s, s', v, qi, tp, qt, cmd, ds), supply)
 
 let desugar (supply: Supply.t) (md: ReturnCheck.returning_module): (SC.combined_module * Supply.t) Outcome.t =
-  let (C.CombinedModule { name; kind; interface_docstring; interface_imports; body_docstring; body_imports; decls }) = ReturnCheck.as_combined_module md in
+  let (C.CombinedModule { name; body_name_span; kind; interface_docstring; interface_imports; body_docstring; body_imports; decls }) = ReturnCheck.as_combined_module md in
   Outcome.map
-    (fun (supply, decls) -> (SC.CombinedModule { name; kind; interface_docstring; interface_imports; body_docstring; body_imports; decls }, supply))
+    (fun (supply, decls) -> (SC.CombinedModule { name; body_name_span; kind; interface_docstring; interface_imports; body_docstring; body_imports; decls }, supply))
     (Outcome.traverse_with_context
        (fun (supply, decl) -> Outcome.catch (fun () -> let (decl, supply) = desugar_decl supply decl in (supply, decl)))
        supply

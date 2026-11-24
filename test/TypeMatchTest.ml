@@ -33,12 +33,13 @@ let constrained (name: string) (typeclass: sident): type_var =
    instance of C for Pointer[U], where U needs an instance of Nope.D. *)
 let env_with_instance: Env.env * sident =
   let (env, mod_id) =
-    Env.add_module Env.empty_env { name = example; imported_instances = InstanceIdSet.empty; imported_symbols = [] }
+    Env.add_module Env.empty_env { name = example; body_name_span = Zustral_core.Span.empty_span; imported_instances = InstanceIdSet.empty; imported_symbols = [] }
   in
   let typeclass: sident = make_sident example (make_ident "C") in
   let (env, typeclass_id) =
     Env.register NoSpan env (NewTypeClass {
         mod_id;
+        span = Zustral_core.Span.empty_span;
         vis = VisPublic;
         name = make_ident "C";
         docstring = Docstring "";

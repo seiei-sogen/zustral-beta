@@ -257,6 +257,7 @@ let rec combine (env: env) (cmi: concrete_module_interface) (cmb: concrete_modul
   let* private_decls = parse_defs mn cmi cmb bm defs in
   Ok (CombinedModule {
           name = mn;
+          body_name_span = name_span;
           kind = kind;
           interface_docstring = interface_docstring;
           interface_imports = im;
@@ -371,7 +372,7 @@ let as_public (def: combined_definition): combined_definition =
      CInstance (span, decl_span, VisPublic, name, typarams, argument, methods, docstring)
 
 let body_as_combined (env: env) (body: concrete_module_body): combined_module Outcome.t =
-  let (ConcreteModuleBody (mn, _, kind, body_docstring, body_imports, defs)) = body in
+  let (ConcreteModuleBody (mn, name_span, kind, body_docstring, body_imports, defs)) = body in
   (* We fake an empty module interface. *)
   let cmi: concrete_module_interface = ConcreteModuleInterface (mn, Docstring "", [], []) in
   let* imports = Outcome.catch (fun () -> resolve mn kind env body_imports) in
@@ -380,6 +381,7 @@ let body_as_combined (env: env) (body: concrete_module_body): combined_module Ou
   let decls = List.map as_public decls in
   Ok (CombinedModule {
           name = mn;
+          body_name_span = name_span;
           kind = kind;
           interface_docstring = Docstring "";
           interface_imports = empty_map mn kind;

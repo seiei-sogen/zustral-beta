@@ -4,6 +4,16 @@
   "text": [
     { "type": "text", "content": "The entrypoint must be a function." }
   ],
-  "span": null,
-  "context": null
+  "span": {
+    "filename": "test-programs/suites/044-unexecuted-declarations-and-late-stages/075-entrypoint-is-union-case/Test.zum",
+    "startp": { "line": 2, "column": 4 },
+    "end": { "line": 4, "column": 8 }
+  },
+  "context": [
+    [ 1, "module body Test is" ],
+    [ 2, "    union U: Free is" ],
+    [ 3, "        case main;" ],
+    [ 4, "    end;" ],
+    [ 5, "end module body." ]
+  ]
 }

@@ -4,6 +4,14 @@
   "text": [
     { "type": "text", "content": "The entrypoint must be a function." }
   ],
-  "span": null,
-  "context": null
+  "span": {
+    "filename": "test-programs/suites/044-unexecuted-declarations-and-late-stages/072-entrypoint-is-constant/Test.zum",
+    "startp": { "line": 2, "column": 4 },
+    "end": { "line": 2, "column": 30 }
+  },
+  "context": [
+    [ 1, "module body Test is" ],
+    [ 2, "    constant main: Int32 := 1;" ],
+    [ 3, "end module body." ]
+  ]
 }

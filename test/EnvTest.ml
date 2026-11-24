@@ -36,6 +36,7 @@ let register_function (env: Env.env) (mod_id: Id.mod_id) (name: string): Env.env
 let add_module (env: Env.env) (name: string): Env.env * Id.mod_id =
   Env.add_module env {
       name = make_mod_name name;
+      body_name_span = Zustral_core.Span.empty_span;
       imported_instances = InstanceIdSet.empty;
       imported_symbols = []
     }
@@ -80,6 +81,7 @@ let test_monomorph_key_not_registered _ =
   let (env, mod_id) =
     Env.add_module Env.empty_env {
         name = pervasive;
+        body_name_span = Zustral_core.Span.empty_span;
         imported_instances = InstanceIdSet.empty;
         imported_symbols = []
       }
@@ -89,6 +91,7 @@ let test_monomorph_key_not_registered _ =
     Env.register NoSpan env (NewUnion {
         id = exit_code_id;
         mod_id;
+        span = Zustral_core.Span.empty_span;
         vis = TypeVisPublic;
         name = exit_code;
         docstring = Docstring "";

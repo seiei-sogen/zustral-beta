@@ -1,0 +1,123 @@
+= issue #87 の修正計画: エントリポイントのエラーに、位置を付ける
+
+== 目的
+
+issue #87 は、位置の出ないエラーを 10 種類挙げている。
+多くは、PR #170 までに直った。
+残りは、エントリポイント（`--entrypoint=Module:name`）が関数でない場合と、ない場合である。
+
+終わりの条件は、issue の表のすべての場合で、利用者のソースに原因があるエラーが、位置を出すことである。
+ソースに位置がありえない場合は、位置を出さず、その理由をこの計画に書く。
+
+== 判断
+
+* *関数でない宣言を名指すエントリポイント* は、その宣言の定義の位置で報告する。
+** union の case は、union の定義の位置で報告する。型クラスのメソッドは、型クラスの定義の位置で報告する。case とメソッドは、構文木の段で自分の位置を持たないからである。
+* *名前がモジュールにないエントリポイント* は、そのモジュールの本体のファイルの、モジュール名の位置で報告する。
+** 関数を書き足す場所は、本体である。インターフェースのあるモジュールでも、本体を指す。
+** プログラムのモジュールが多いとき、どのファイルを開けばよいかが分かる。
+** GHC と rustc も、`main` がないエラーを、そのモジュールのファイルの位置で報告する。
+* *モジュールがないエントリポイント*（`--entrypoint=Nope:main`）は、位置を出さない。モジュールの名前はコマンドラインから来る。コンパイルするソースのどのファイルにも、そのモジュールはない。
+* *C コンパイラの失敗*（表の 10）は、位置を出さない。失敗は、生成した C のプログラム全体についてのもので、Zustral のソースの1行に結び付かない。題は、すでに「C Compiler Error」になっている（`c43c7a2e`）。
+
+所有者の代わりに選んだ既定である。違う判断にするときは、この PR を取り消して、issue を開き直す。
+
+== 現状
+
+`1d6a37d` で、表の場合を1つずつ実行して確かめた。番号は issue の表の番号である。
+
+. *取り込んだ名前が、そのモジュールにない*: 位置が出る。取り込みの文を指す。
+. *知らないモジュール*: 位置が出る。取り込みの文を指す。
+. *定数の初期値の中のエラー*: 位置が出る。定数の定義を指す。
+. *エントリポイント*: モジュール名は、`[unknown]` でなく、そのモジュールの名前になっている。
+.. 関数だが、公開でない、汎用である、引数か返り値の型が違う: 位置が出る。関数の定義を指す（`ff3858e1`）。
+.. *関数でない*（定数、レコード、union、union の case、型クラス、型クラスのメソッド）: *位置が出ない*。
+.. *名前がモジュールにない*: *位置が出ない*。
+.. *モジュールがない*: 位置が出ない。題は「Declaration Error」、文面は「Unknown module `Nope`.」である。
+. *本体のない宣言*: 位置が出る。インターフェースの宣言を指す。*インターフェースと本体の名前の不一致*: 位置が出る。本体のモジュール名を指す。
+. *本体だけの関数の中の、不正なエスケープ*: 位置が出る。文字列リテラルを指す。
+. *引数の名前が、宣言の名前とぶつかる*: 位置が出る。関数の定義を指す。
+. *安全なモジュールの中の外部関数*: 位置が出る。関数の定義を指す。
+. *外部関数のシグネチャ、公開する関数の型*: 位置が出る。関数の定義を指す。
+. *C コンパイラの失敗*: 位置は出ない。題は「C Compiler Error」である。
+
+関係するコードは、`lib/Entrypoint.ml` の `check_entrypoint_validity` である。
+関数でない宣言と、ない名前のエラーを、`NoSpan` で投げていた。
+環境の宣言のうち、位置を持つのは関数だけだった。環境のモジュールも、位置を持たなかった。
+
+== 変更
+
+* `lib/EnvTypes.ml`: 環境の宣言（定数、レコード、union、union の case、型クラス、型クラスのメソッド）と、その登録の入力に、`span` を足す。関数は `ff3858e1` で持った。環境のモジュール（`mod_rec` と `mod_input`）に、`body_name_span` を足す。本体のファイルの、モジュール名の位置である。
+* `lib/Env.ml`: `register` と `add_module` が、足した欄を写す。
+* `lib/Stages.ml`: 結合したモジュール（`Combined` と `SmallCombined` の `combined_module`）に、`body_name_span` を足す。
+* `lib/CombiningPass.ml`: 本体の構文木が持つモジュール名の位置を、`body_name_span` に入れる。インターフェースのあるモジュールも、本体だけのモジュールも同じである。
+* `lib/DesugaringPass.ml`: `body_name_span` を写す。
+* `lib/ExtractionPass.ml`: 宣言の定義の位置と、モジュール名の位置を、環境に渡す。union の case と型クラスのメソッドには、union と型クラスの定義の位置を渡す。
+* `lib/Entrypoint.ml`: `check_entrypoint_validity` は、先にモジュールを引く。なければ、いままでどおり `UnknownModule` を位置なしで投げる。関数でない宣言は、その宣言の `span` で報告する。名前がなければ、モジュールの `body_name_span` で報告する。
+* `test/` の単体テスト 5 本: 環境にモジュールと宣言を登録する箇所に、空の位置を足す。
+
+== テスト
+
+最初に書く、失敗するテスト。直す前は、どれも失敗する。
+
+* 既にある 8 本の期待値を、位置のあるものに書き換える。
+** `032-other-errors/002-entrypoint-no-such-function`: 1 行目の `Test`（12 桁から 16 桁）を指す。
+** `032-other-errors/003-entrypoint-not-function` と `044-unexecuted-declarations-and-late-stages/072-entrypoint-is-constant`: 定数の定義を指す。
+** `044/073` から `044/077`: レコード、union、union の case、型クラス、型クラスのメソッド。それぞれ、レコード、union、union、型クラス、型クラスの定義を指す。
+* `032-other-errors/034-entrypoint-no-such-function-in-a-module-with-an-interface`（新しいテスト）: インターフェースのあるモジュールで、名前がない。エラーは、本体のファイル `Test.zum` のモジュール名を指す。
+
+決めた振る舞いを固定するテスト。直す前も通る。
+
+* `032-other-errors/035-entrypoint-module-does-not-exist`（新しいテスト）: `--entrypoint=Nope:main`。位置を出さない。
+
+== 確認
+
+* 計測値: `lib/` の行数が変わる。`measure.sh --record` で記録し直す。
+* エラーメッセージのテスト: 新しい文面はない。
+* カバレッジ: `lib/Entrypoint.ml` の新しい行は、035（モジュールがない）、002 と 034（名前がない）、072 から 077（関数でない）が実行する。`lib/CombiningPass.ml` の2つの組み立ては、本体だけのモジュールと、034 のようなインターフェースのあるモジュールが実行する。
+
+== 範囲外
+
+* union の case と、型クラスのメソッドに、自分の位置を持たせること。構文解析が、case とメソッドの宣言の位置を残していない。
+* モジュールがないエントリポイントのエラーの種別と文面。取り込みと同じ「Declaration Error」で、Module の欄に、ないモジュールの名前が出る。読み違えるものではないので、変えない。
+* コマンドラインの解析（`cli/CliParser.ml` の `parse_entrypoint`）が、空のモジュール名や空の関数名を断らないこと。`--entrypoint=Test:` は「No function named `` in module `Test`」、`--entrypoint=:main` は Module の欄が空の「Unknown module ``.」になる。この PR の前からある。別の issue にする。
+
+== セルフレビュー
+
+issue の本文に照らして見直した。
+
+* 「利用者のソースに原因があるエラーは、すべて位置を出す」: 表の 10 種類を、`1d6a37d` のコンパイラで1つずつ実行した。位置の出なかった2つ（関数でない、ない）に、位置を付けた。位置を出さない2つ（モジュールがない、C コンパイラの失敗）は、理由を「判断」の節に書いた。
+* 呼び出し元: `check_entrypoint_validity` を呼ぶのは、`Entrypoint.entrypoint_code` だけである。それを呼ぶのは、`Compiler.finish` だけで、`in_module` の中にある。`register` と `add_module` を呼ぶのは、`lib/` では `ExtractionPass` だけである。
+* 試した入力（テストにしていないもの）。どれも、期待した位置を指した。
+** インターフェースで宣言し、本体で定義した定数と不透明な型: 本体の定義を指す。
+** インターフェースで定義した union の case と、型クラスのメソッド: インターフェースの union と型クラスを指す。
+** 取り込んだ名前（`import Zustral.Memory (allocate);` の `allocate`）: 本体のモジュール名を指す。宣言ではないからである。
+** 先頭のコメント、`pragma Unsafe_Module;`、2 行に分けた `module body` と `Test is`: 6 行目の `Test` を指す。
+** 2つのモジュールの、先にコンパイルするほう: そのファイルのモジュール名を指す。
+** 組み込みのモジュール（`Zustral.Pervasive:nothingHere`、`Zustral.Pervasive:ExitCode`、`Zustral.Pervasive:ExitSuccess`）: `lib/builtin/Pervasive.zum` のモジュール名と、`lib/builtin/Pervasive.zui` の `ExitCode` を指す。
+** 空の名前（`--entrypoint=Test:`、`--entrypoint=:main`）: 「範囲外」に書いた、この PR の前からある問題が見つかった。
+
+== 実装の記録
+
+* 期待値を手で書き、9 本が失敗するのを見てから直した。直した後、002 だけ、JSON の並べ方（短い引用を1行に書く）が手書きと違った。位置は同じだったので、コンパイラの出力を期待値にした。
+* 最初は、モジュールを引く `match` の中に、宣言を引く `match` を入れ子にした。インデントが読みにくいので、モジュール名の位置を `let` で取る形に直した。
+* 計測値では、`raise` が1つ増えた。エントリポイントの検査が、宣言を引く前に、モジュールがないことを自分で報告するからである。
+* コードレビューの後で、2つ直した。union の case と型クラスのメソッドの欄は、`span` でなく、`union_definition_span` と `typeclass_definition_span` という名前にした。持っているのは、case やメソッドの位置でなく、union と型クラスの定義の位置だからである。`032-other-errors/036-entrypoint-is-constant-declared-in-the-interface`（新しいテスト）で、インターフェースで宣言し本体で定義した定数は、本体の定義を指すことを固定した。
+* `tools/refactoring/run-every-ci-check-locally.sh` の 14 個の検査は、すべて `ok` だった。
++
+----
+ok    make (0s)
+ok    make-test (1s)
+ok    end-to-end (160s)
+ok    command-line (2s)
+ok    metrics-equal-the-record (8s)
+ok    no-unused-exports (4s)
+ok    every-message-has-a-test (0s)
+ok    no-error-escapes-a-stage (2s)
+ok    only-environment-makes-ids (1s)
+ok    every-wording-is-shown (115s)
+ok    every-line-is-executed (76s)
+ok    examples (6s)
+ok    stdlib-build (0s)
+ok    stdlib-test (0s)
+----

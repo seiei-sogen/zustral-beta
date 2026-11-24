@@ -1,0 +1,3 @@
+module Test is
+    constant main: Int32;
+end module.

@@ -168,13 +168,14 @@ let module_name_from_id (place: place) (env: env) (mod_id: mod_id): module_name 
   name
 
 let add_module (env: env) (input: mod_input): (env * mod_id) =
-  let { name; imported_instances; imported_symbols } = input in
+  let { name; body_name_span; imported_instances; imported_symbols } = input in
   let _ = ensure_no_mod_with_name env name in
   let (Env { mods; methods; decls; instances; monos; exports; supply }) = env in
   let (id, supply) = fresh_mod_id supply in
   let md = ModRec {
                id;
                name;
+               body_name_span;
                imported_instances;
                imported_symbols;
              }
@@ -237,37 +238,37 @@ let register (type id) (place: place) (env: env) (registration: id registration)
       add_decl (fun supply -> (id, snd (Supply.next_decl_id supply))) make
   in
   match registration with
-  | NewConstant { mod_id; vis; name; ty; docstring } ->
+  | NewConstant { mod_id; span; vis; name; ty; docstring } ->
      name_must_be_free mod_id name;
-     add_decl fresh_constant_id (fun id -> Constant { id; mod_id; vis; name; ty; docstring })
-  | NewRecord { id; mod_id; vis; name; docstring; typarams; universe; slots } ->
+     add_decl fresh_constant_id (fun id -> Constant { id; mod_id; span; vis; name; ty; docstring })
+  | NewRecord { id; mod_id; span; vis; name; docstring; typarams; universe; slots } ->
      name_must_be_free mod_id name;
      let has_id (decl: decl): bool =
        match decl with
        | Record record -> equal_record_id record.id id
        | Constant _ | Union _ | UnionCase _ | Function _ | TypeClass _ | TypeClassMethod _ -> false
      in
-     add_reserved has_id id (fun id -> Record { id; mod_id; vis; name; docstring; typarams; universe; slots })
-  | NewUnion { id; mod_id; vis; name; docstring; typarams; universe } ->
+     add_reserved has_id id (fun id -> Record { id; mod_id; span; vis; name; docstring; typarams; universe; slots })
+  | NewUnion { id; mod_id; span; vis; name; docstring; typarams; universe } ->
      name_must_be_free mod_id name;
      let has_id (decl: decl): bool =
        match decl with
        | Union union -> equal_union_id union.id id
        | Constant _ | Record _ | UnionCase _ | Function _ | TypeClass _ | TypeClassMethod _ -> false
      in
-     add_reserved has_id id (fun id -> Union { id; mod_id; vis; name; docstring; typarams; universe })
-  | NewUnionCase { mod_id; vis; union_id; name; docstring; slots } ->
+     add_reserved has_id id (fun id -> Union { id; mod_id; span; vis; name; docstring; typarams; universe })
+  | NewUnionCase { mod_id; union_definition_span; vis; union_id; name; docstring; slots } ->
      name_must_be_free mod_id name;
-     add_decl fresh_union_case_id (fun id -> UnionCase { id; vis; mod_id; union_id; name; docstring; slots })
+     add_decl fresh_union_case_id (fun id -> UnionCase { id; vis; mod_id; union_definition_span; union_id; name; docstring; slots })
   | NewFunction { mod_id; span; vis; name; docstring; typarams; value_params; rt; impl } ->
      name_must_be_free mod_id name;
      add_decl fresh_function_id (fun id -> Function { id; mod_id; span; vis; name; docstring; typarams; value_params; rt; impl })
-  | NewTypeClass { mod_id; vis; name; docstring; param } ->
+  | NewTypeClass { mod_id; span; vis; name; docstring; param } ->
      name_must_be_free mod_id name;
-     add_decl fresh_typeclass_id (fun id -> TypeClass { id; mod_id; vis; name; docstring; param })
-  | NewTypeClassMethod { mod_id; vis; typeclass_id; name; docstring; typarams; value_params; rt } ->
+     add_decl fresh_typeclass_id (fun id -> TypeClass { id; mod_id; span; vis; name; docstring; param })
+  | NewTypeClassMethod { mod_id; typeclass_definition_span; vis; typeclass_id; name; docstring; typarams; value_params; rt } ->
      name_must_be_free mod_id name;
-     add_decl fresh_typeclass_method_id (fun id -> TypeClassMethod { id; mod_id; vis; typeclass_id; name; docstring; typarams; value_params; rt })
+     add_decl fresh_typeclass_method_id (fun id -> TypeClassMethod { id; mod_id; typeclass_definition_span; vis; typeclass_id; name; docstring; typarams; value_params; rt })
   | NewInstance { mod_id; vis; typeclass_id; docstring; typarams; argument } ->
      (* Not checked here: an instance has no name. The caller checks that it
         overlaps no instance of its own module, and the orphan rule, which
