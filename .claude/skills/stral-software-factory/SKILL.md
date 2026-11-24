@@ -10,6 +10,10 @@ issue を1件ずつ直してマージし、次の issue へ進む。扱う issue
 
 扱う issue は、引数に番号があればその issue だけ、なければ開いている issue のすべてである。
 
+計画と実行は、pstack の poteto-mode で行う。始める前に、Skill ツールで `pstack:poteto-mode` を呼ぶ。
+手順3から6は、issue に合う poteto-mode の playbook（Bug fix、Feature、Refactoring など）に従って進め、その計画を `fix-plan.adoc` に書く。
+PR とマージは、poteto-mode の Opening a PR、Babysit、Shipping ではなく、このスキルの手順7と8に従う。
+
 ## 置き場
 
 ```
@@ -94,7 +98,6 @@ issue の本文とコメントに照らして、計画を1回見直す。見る�
 ### 5. 実装する
 
 計画に従い、`/superpowers:test-driven-development` で実装する。計画と違うことをしたら、計画にそう書き足す。
-コミットは手順7でまとめて行う。手順6のコードレビューが、コミットしていない差分を見るからである。
 
 この手順は、次の検査がすべて `ok` になれば終わりである。
 
@@ -104,7 +107,13 @@ nix-shell --command 'tools/refactoring/run-every-ci-check-locally.sh'
 
 ### 6. コードレビューで直す
 
-Claude Code の `/code-review` を `high --fix` で実行する。Skill ツールなら、スキル `code-review` に引数 `high --fix` を渡す。
+`git fetch origin master` のあと、Claude Code の `/code-review` を実行する。Skill ツールなら、スキル `code-review` に次の引数を渡す。
+最後の3語を落とすと、コミットしていない差分がレビューから漏れる。
+
+```
+high --fix origin/master...HEAD plus uncommitted changes
+```
+
 直したら、手順5の検査をもう一度すべて通す。
 
 この issue の範囲外の指摘で、直す価値があるものは、新しい issue にする。
@@ -115,7 +124,7 @@ gh api repos/seiei-sogen/zustral-beta/issues -f title='…' -F body=@<本文の�
 
 ### 7. PR を立てる
 
-日本語でコミットし、push して、PR を立てる。
+残りを日本語でコミットし、push して、PR を立てる。
 
 ```bash
 gh api repos/seiei-sogen/zustral-beta/pulls -f base=master -f head=<ブランチ> \
