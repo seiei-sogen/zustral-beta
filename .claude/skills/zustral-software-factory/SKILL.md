@@ -76,9 +76,10 @@ gh api 'repos/seiei-sogen/zustral-beta/issues?state=open&per_page=100&page=1' \
 
 最新の `origin/master` から作る。名前は、セッションに指定されたブランチがあればそれ、なければ `issue-<番号>` にする。
 前の issue と同じ名前を使い回すこともあるので、作り直す形にする。
+`--prune` を付けて全体を取るのは、手順8の `--force-with-lease` がリモートのブランチのいまの位置を知っている必要があるからである。
 
 ```bash
-git fetch origin master
+git fetch --prune origin
 git checkout -B <ブランチ> origin/master
 ```
 
@@ -144,8 +145,10 @@ PR を立てる前のコミットに入れるのは、記録のためだけに C
 ### 8. PR を立てる
 
 残りを日本語でコミットして push し、PR を立てる。
+リモートに前の issue のマージ済みのブランチが残っていることがあるので、`--force-with-lease` で上書きする。手順2のあとに誰かが push していれば、push は断られる。そのときは止める。
 
 ```bash
+git push --force-with-lease -u origin <ブランチ>
 gh api repos/seiei-sogen/zustral-beta/pulls -f base=master -f head=<ブランチ> \
   -f title='…' -F body=@<本文のファイル>
 ```
@@ -164,13 +167,14 @@ CI を待つ。クラウド環境では `subscribe_pr_activity` で PR を購読
 
 CI が落ちたら、原因を直して push し、PR の本文をいまの内容に合わせて更新する（`gh api -X PATCH repos/seiei-sogen/zustral-beta/pulls/<PR 番号> -F body=@<本文のファイル>`）。そしてまた待つ。
 
-push した最後のコミットの check run が1件以上あり、そのすべてが `completed` で `success` になったら、squash でマージし、作業ブランチをリモートから消す。クラウド環境では購読もやめる。
+push した最後のコミットの check run が1件以上あり、そのすべてが `completed` で `success` になったら、squash でマージする。
+手元では、作業ブランチ `issue-<番号>` をリモートから消す。クラウド環境ではブランチを消せないので残し、購読をやめる。残したブランチは、次の issue の手順8で上書きされる。
 
 ```bash
 gh api repos/seiei-sogen/zustral-beta/commits/<SHA>/check-runs \
   --jq '.check_runs[] | [.name, .status, .conclusion] | @tsv'
 gh api -X PUT repos/seiei-sogen/zustral-beta/pulls/<PR 番号>/merge -f merge_method=squash -f sha=<SHA>
-gh api -X DELETE repos/seiei-sogen/zustral-beta/git/refs/heads/<ブランチ>
+gh api -X DELETE repos/seiei-sogen/zustral-beta/git/refs/heads/issue-<番号>  # 手元だけ
 ```
 
 手順1に戻る。
