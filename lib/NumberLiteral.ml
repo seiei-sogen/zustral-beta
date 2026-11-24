@@ -73,12 +73,17 @@ let of_float (written: string): float_literal =
 let of_value (value: Z.t): int_literal =
   { written = Z.to_string value; radix = Decimal; value }
 
-let negated_float (literal: float_literal): float_literal =
-  let length: int = String.length literal.written in
-  if String.starts_with ~prefix:"-" literal.written then
-    { literal with written = String.sub literal.written 1 (length - 1) }
+let toggle_leading_minus_of_written_text (written: string): string =
+  if String.starts_with ~prefix:"-" written then
+    String.sub written 1 (String.length written - 1)
   else
-    { literal with written = "-" ^ literal.written }
+    "-" ^ written
+
+let negated_int (literal: int_literal): int_literal =
+  { literal with written = toggle_leading_minus_of_written_text literal.written; value = Z.neg literal.value }
+
+let negated_float (literal: float_literal): float_literal =
+  { literal with written = toggle_leading_minus_of_written_text literal.written }
 
 (* The value in decimal, whatever the literal looked like. *)
 let int_text (literal: int_literal): string =

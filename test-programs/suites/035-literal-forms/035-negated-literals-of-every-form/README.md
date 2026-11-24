@@ -1,0 +1,1 @@
+Test that a `-` before a hexadecimal, binary, octal, character or separated decimal literal negates its value in a `let`, a constant, an argument, an `if` branch and an operand, and that `-#x80` fits `Int8`. The negated literal keeps how it was written, for the type checker, and its value does not change (issue #38).

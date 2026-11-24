@@ -56,7 +56,7 @@ and apply_op (place: place) (op: arithmetic_operator) (lhs: Z.t) (rhs: Z.t): Z.t
 let negation_of_operand (operand: Ast.aexpr): Ast.aexpr =
   match operand with
   | Ast.IntConstant i ->
-     Ast.IntConstant (NumberLiteral.of_value (Z.neg i.value))
+     Ast.IntConstant (NumberLiteral.negated_int i)
   | Ast.FloatConstant f ->
      Ast.FloatConstant (NumberLiteral.negated_float f)
   | Ast.NilConstant | Ast.BoolConstant _ | Ast.StringConstant _ | Ast.Variable _

@@ -19,7 +19,8 @@ type radix =
 
 type int_literal = private {
   written: string;
-  (** The text as the lexer saw it, with its prefix and digit separators. *)
+  (** The text as the lexer saw it, with its prefix and digit separators, and
+      a leading `-` when the literal is a negated one ([negated_int]). *)
   radix: radix;
   value: Z.t;
 }
@@ -54,6 +55,10 @@ val of_float : string -> float_literal
 (** An integer literal that nobody wrote: the value of a literal-only
     expression. Its text is the value in decimal. *)
 val of_value : Z.t -> int_literal
+
+(** The integer literal of the negation of the literal, written as the
+    literal was: `-#xFF` of `#xFF`, and `#xFF` of `-#xFF`. *)
+val negated_int : int_literal -> int_literal
 
 (** The float literal of the negation of the literal: `-2.5` of `2.5`, and
     `2.5` of `-2.5`. *)
