@@ -3,6 +3,8 @@ module body Test is
         let s: Span[Nat8, Static] := "abc";
         let b: Bool := true;
         printLn(s[if b then 0 else 1]);
+        let i: Index := if b then 2 else 0;
+        printLn(s[i]);
         return ExitSuccess();
     end;
 end module body.

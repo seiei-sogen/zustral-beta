@@ -562,8 +562,8 @@ and infer_before_place_types_literal (ctx: expr_ctx) (expr: aexpr): texpr =
      augment_disjunction ctx lhs rhs
   | Negation e ->
      augment_negation ctx e
-  | IfExpression (c, t, f) ->
-     augment_if_expr ctx c t f
+  | IfExpression (condition, then_branch, else_branch) ->
+     augment_if_expr ctx condition then_branch else_branch (infer ctx)
   | Embed (ty, expr, args) ->
      TEmbed (
          parse_typespec ctx ty,
@@ -590,9 +590,10 @@ and check (ctx: expr_ctx) (expr: aexpr) (expected: ty): texpr =
 
 (* `expr` in a place that expects the type `expected`, before the two types are
    compared. The expected type reaches a variable, a call and an arithmetic
-   expression, where it fixes the type variables that the expression does not.
-   Every other expression is inferred as if nothing were expected, and so are
-   the arguments and the operands of those three. *)
+   expression, where it fixes the type variables that the expression does not,
+   and the two branches of an `if` expression (#35). Every other expression is
+   inferred as if nothing were expected, and so are the arguments and the
+   operands of those three, and the condition of the `if` expression. *)
 and infer_with_expected (ctx: expr_ctx) (expr: aexpr) (expected: ty): texpr =
   match expr with
   | Variable name ->
@@ -602,11 +603,26 @@ and infer_with_expected (ctx: expr_ctx) (expr: aexpr) (expected: ty): texpr =
      augment_call ctx name arglist (expected_type ctx expected)
   | ArithmeticExpression (op, lhs, rhs) ->
      augment_arithmetic ctx op lhs rhs (expected_type ctx expected)
+  | IfExpression (condition, then_branch, else_branch) ->
+     augment_if_expr ctx condition then_branch else_branch (fun branch -> infer_branch_with_expected ctx branch expected)
   | NilConstant | BoolConstant _ | IntConstant _ | FloatConstant _ | StringConstant _
   | Temporary _ | Comparison _ | Conjunction _ | Disjunction _ | Negation _
-  | ArithmeticNegation _ | IfExpression _ | Embed _ | Deref _ | Typecast _ | SizeOf _
+  | ArithmeticNegation _ | Embed _ | Deref _ | Typecast _ | SizeOf _
   | SlotAccessor _ | PointerSlotAccessor _ | ArrayIndex _ ->
      infer_before_place_types_literal ctx expr
+
+(* A branch of an `if` expression that the type `expected` reaches. A literal
+   that the rules for literals accept takes the type, under a cast the type
+   checker adds, so that both branches and the `if` expression have it. Any
+   other branch keeps its own type, which the place compares with the expected
+   one, and a literal there has its default type. *)
+and infer_branch_with_expected (ctx: expr_ctx) (branch: aexpr) (expected: ty): texpr =
+  let value: texpr = infer_with_expected ctx branch expected in
+  if LiteralTyping.literal_matches (ctx_place ctx) expected value then
+    TImplicitCast (value, expected)
+  else
+    (LiteralTyping.check_int_literal_fits_default_type (ctx_place ctx) value;
+     value)
 
 (* An operand of a comparison or of an arithmetic expression. A lone literal
    takes the type of the other operand: the caller matches it against that
@@ -730,17 +746,19 @@ and augment_arithmetic_negation (ctx: expr_ctx) (operand: aexpr): texpr =
   else
     type_error (ctx_place ctx) (ArithmeticNegationOperandNotSigned ty)
 
-and augment_if_expr ctx c t f =
-  let c' = infer ctx c
-  and t' = infer ctx t
-  and f' = infer ctx f in
-  if is_bool (ctx_place ctx) c' then
-    if (get_type (ctx_place ctx) t') = (get_type (ctx_place ctx) f') then
-      TIfExpression (c', t', f')
+(* `type_branch` types each branch: `infer` where no type reaches the `if`
+   expression, `infer_branch_with_expected` where one does. *)
+and augment_if_expr (ctx: expr_ctx) (condition: aexpr) (then_branch: aexpr) (else_branch: aexpr) (type_branch: aexpr -> texpr): texpr =
+  let condition' = infer ctx condition
+  and then_branch' = type_branch then_branch
+  and else_branch' = type_branch else_branch in
+  if is_bool (ctx_place ctx) condition' then
+    if equal_ty (get_type (ctx_place ctx) then_branch') (get_type (ctx_place ctx) else_branch') then
+      TIfExpression (condition', then_branch', else_branch')
     else
-      type_error (ctx_place ctx) (IfInequal { lhs = get_type (ctx_place ctx) t'; rhs = get_type (ctx_place ctx) f' })
+      type_error (ctx_place ctx) (IfInequal { lhs = get_type (ctx_place ctx) then_branch'; rhs = get_type (ctx_place ctx) else_branch' })
   else
-    type_error (ctx_place ctx) (ConditionNotBoolean { condition = IfExpressionCondition; ty = get_type (ctx_place ctx) c' })
+    type_error (ctx_place ctx) (ConditionNotBoolean { condition = IfExpressionCondition; ty = get_type (ctx_place ctx) condition' })
 
 and augment_deref (ctx: expr_ctx) (expr: aexpr): texpr =
   (* The type of the expression being dereferenced must be either a read-only

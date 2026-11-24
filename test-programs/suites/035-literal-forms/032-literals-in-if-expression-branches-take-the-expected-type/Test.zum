@@ -1,0 +1,27 @@
+module body Test is
+    constant big: Int64 := if true then 4294967296 else 0;
+
+    function pick(c: Bool): Int64 is
+        return if c then 4294967297 else -4294967297;
+    end;
+
+    function main(): ExitCode is
+        let c: Bool := true;
+        let x: Int64 := if c then 1 else 2;
+        printLn(x);
+        printLn(big);
+        printLn(pick(false));
+        var n: Nat64 := 0;
+        n := if c then 18446744073709551615 else 0;
+        printLn(n);
+        printLn(((if c then 4294967298 else 0) : Int64));
+        let nested: Int64 := if c then (if c then 4294967299 else 1) else 2;
+        printLn(nested);
+        let f: Float32 := if c then 1.5 else 2.5;
+        printLn(f);
+        for i from 0 to if c then 1 else 0 do
+            printLn(i);
+        end for;
+        return ExitSuccess();
+    end;
+end module body.

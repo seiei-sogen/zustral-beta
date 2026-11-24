@@ -1,0 +1,5 @@
+module body Lib is
+    function find(): Option[Mode] is
+        return Some(value => Down());
+    end;
+end module body.

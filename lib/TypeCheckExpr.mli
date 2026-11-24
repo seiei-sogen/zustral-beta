@@ -43,7 +43,9 @@ val check : expr_ctx -> aexpr -> ty -> texpr
 
 (** The first half of [check]: the expression, with the expected type fixing
     its type variables, before its type is compared with the expected type.
-    The caller compares the two and says what is wrong when they differ. *)
+    The expected type also reaches both branches of an `if` expression, where
+    a literal takes it. The caller compares the two and says what is wrong
+    when they differ. *)
 val infer_with_expected : expr_ctx -> aexpr -> ty -> texpr
 
 (** Type check an expression under a type annotation: `e : T`, and the value

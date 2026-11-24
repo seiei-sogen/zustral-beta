@@ -1,0 +1,84 @@
+= issue #35 の修正計画: if 式の枝に、期待する型を届ける
+
+== 目的
+
+issue #35 は、`if` 式の枝に書いたリテラルが、式全体に期待される型にならないことを報告している。
+`let x: Int64 := if c then 1 else 2;` は、「Cannot cast to `Int64` from `Int32`」になる。
+Decimal の仕様（`docs/decimal.md` の4.3節）は、`if` 式に届いた型が、2つの枝に届くと決めている。
+
+終わりの条件は、`if` 式に型が届く位置で、その型が2つの枝に届くことである。
+枝のリテラルは、届いた型に収まれば、その型になる。収まらなければ、エラーになる。
+
+== 現状
+
+作業の元のコミット（`1d6a37d`）で確かめた。
+
+. `let x: Int64 := if c then 1 else 2;` は、「Cannot cast to `Int64` from `Int32`」になる（issue の再現）。
+. `let x: Int32 := if c then 1 else 2;` は通り、`1` を出力する。
+. `let x: Float32 := if c then 1.5 else 2.5;` は、「Cannot cast to `Float32` from `Float64`」になる。
+. `let x: Option[Int32] := if c then None() else None();` は、「`None` is generic but unconstrained」になる。`036-type-checker-paths/041` が、この振る舞いを固定している。
+. `s[if b then 0 else 1]` は、添字が `Int32` だというエラーになる。`016-spans/018` が固定している。
+. issue の Decimal の例（`Decimal[5, 4]`）は、まだ書けない。Decimal の型がコンパイラにないので、構文のエラーになる。
+
+原因は、`lib/TypeCheckExpr.ml` の `infer_with_expected` である。
+期待する型を渡すのは、変数、呼び出し、算術の式だけである。
+`if` 式は、期待する型を捨てて推論する。枝は `infer` で型を付けるので、リテラルは既定の型 `Int32` になる。
+
+== 変更
+
+`lib/TypeCheckExpr.ml` だけを変える。期待する型を下へ渡すだけで、推論は足さない。
+
+* `infer_with_expected` に、`IfExpression` の場合を足す。条件は今までどおり `infer` で調べる。2つの枝は、`infer_branch_with_expected` で調べる。
+* `infer_branch_with_expected`（新しい関数）: 枝を `infer_with_expected` で調べる。枝が、リテラルの規則（`LiteralTyping.literal_matches`）が受け付けるリテラルなら、型検査が足すキャスト（`TImplicitCast`）で、期待する型にする。整数のリテラルは、その型に収まらなければエラーである。ほかの枝は、自分の型のままにする。そこにあるリテラルは、既定の型に照らす。
+* `augment_if_expr` は、枝の型の付け方を引数に取る。型の届かない `if` 式は `infer` を、届く `if` 式は `infer_branch_with_expected` を渡す。条件、then の枝、else の枝の順に調べることは変えない。
+
+枝を、期待する型と照らすことはしない。照らすのは、今までどおり、`if` 式を置いた位置である。
+型注釈の位置（`let` と `e : T`）は、書き込みの参照を読み取りの参照に変える。枝ごとに照らすと、この変換が枝に届かず、通っていたプログラムが通らなくなるからである。
+
+== テスト
+
+最初に書く、失敗するテスト。直す前に、4つとも失敗することを確かめた。
+
+* `035-literal-forms/032-literals-in-if-expression-branches-take-the-expected-type`: issue の再現と、型が届く位置のすべて。`let`、`return`、代入、型注釈、`for` の上限、定数、入れ子の `if` 式の枝。`Int32` に収まらないリテラルで、既定の型にならないことを示す。`Float32` の枝も入れる。
+* `035-literal-forms/033-literal-in-if-expression-branch-does-not-fit-the-expected-type`: `let x: Int8 := if c then 1 else 300;` は、「The integer `300` does not fit the type `Int8`.」になる。直す前は「Cannot cast to `Int8` from `Int32`」だった。
+* `036-type-checker-paths/041-expected-type-reaches-if-expression-branches`: 元の `041-expected-type-stops-at-if-expression` を書き換えた。`None()` が、`let` の型から型引数を受け取る。
+* `016-spans/018-index-span-with-if-expression-of-literals`: 添字の `if` 式の枝のリテラルが、`Index` になる。エラーのテストから、通るテストに変えた。
+
+型の届かない `if` 式の枝が、今までどおり既定の型になることは、`035-literal-forms/016` が確かめる（`printLn` の引数）。
+`042-expected-type-stops-at-comparison` は、変えない。比較の式に届いた型は、両辺へ進まない。
+
+== 確認
+
+* 計測値: `lib/TypeCheckExpr.ml` の行が増える。`measure.sh --record` で記録し直す。
+* エラーメッセージのテスト: 新しい文面はない。
+* カバレッジ: `infer_branch_with_expected` の2つの道を、`035-literal-forms/032`（リテラル）と `036-type-checker-paths/041`（呼び出し）が実行する。
+* 文書: `docs/walkthrough.md` の、型の届かない位置の説明を直す。`docs/plan.md` の L6 に結果を書く。`docs/decimal.md` の17節から、`if` 式の枝を、まだ行っていないものから外す。`docs/check-plan.py` の `FIXED` に 35 を足す。
+
+== 範囲外
+
+* 引数とレコードの欄。今の型検査は、引数を先に推論してから、仮引数の型と照らす。引数の `if` 式には型が届かないので、`widen(if c then 1 else 2)` は、今までどおり `Int32` を渡すエラーになる。Decimal の計画の D6（2 と 3）で、引数と演算子の相手へ型を渡すときに扱う。
+* 演算子の相手。`(if c then 1 else 2) + a` は、`a` が `Int64` でも、今までどおりエラーである。仕様の4.3節の `+` と `-` の規則は、D6 で入れる。
+* 型変数の引数に渡したリテラル（issue #55）。`let x: Option[Int64] := if c then None() else Some(value => 5);` は、`Some` の枝が `Option[Int32]` になり、枝の型が違うというエラーになる。仕様の4.3節のとおりである。
+* Decimal のリテラル。Decimal の型がまだない。この変更で、`if` 式の枝には型が届くようになったので、D3 以降の Decimal のリテラルも、同じ道で型を受け取る。
+
+== セルフレビュー
+
+issue の本文と、自分の差分を、攻める側から見直した。直した後のコンパイラで、次を試した。
+
+* 入れ子の `if` 式: 内側の枝まで型が届く（032 のテスト）。
+* 引数としての `if` 式、レコードの欄としての `if` 式: 今までどおり、`Expected a value of type Int64, but got a value of type Int32.` になる。範囲外の節に書いた。
+* `return` の値: 届く（032 のテスト）。
+* 型変数が期待される `if` 式: `let y: T := if c then 1 else 2;` は、今までどおり「Cannot cast to `T` from `Int32`」になる。型変数の位置にはリテラルを書けない（issue #25）。枝が `T` の値なら、今までどおり通る。
+* 枝の型が違う: `let x: Int64 := if c then a else 2;`（`a` は `Int32`）は、「The branches of the `if`-expression have different types: `Int32` and `Int64`」になる。直す前は「Cannot cast to `Int64` from `Int32`」だった。どちらもエラーであり、仕様の14節は、枝の型が違うことをエラーに挙げている。`let x: Int64 := if c then 1.5 else 2;` も、枝の型が違うエラーである。
+* 期待する型に収まらないリテラル: `Int8` に 300、`Nat8` に -1 は、収まらないというエラーになる（033 のテスト）。`Bool` が期待される枝の 4294967296 は、今までどおり `Int32` に収まらないエラーである。
+* 境界のリテラル: `Int64` の最小値、`Nat64` の最大値、`Int8` の -128 が、枝で正しく出力される。
+* 書き込みの参照: `let r: &[Int32, R] := if c then ra else ra;`（`ra` は書き込みの参照）は、今までどおり通る。`return` で同じことをすると、今までどおりエラーである。
+* 汎用の呼び出し: `let x: Option[Int64] := if c then zero() else None();` が通る。直す前は、型が曖昧だというエラーだった。
+* 条件: 型は届かない。`if 1 then 1 else 2` は、今までどおり条件が真偽値でないエラーである。
+
+== 実装の記録
+
+* 計画どおりに実装した。
+* `tools/refactoring/run-every-ci-check-locally.sh` の 14 個の検査は、すべて `ok` だった。
+* コードレビューで、テストを1つ足した。`035-literal-forms/034-literal-in-if-expression-branch-does-not-take-the-type-of-the-other-branch`: `let x: Int64 := if c then a else 2;`（`a` は `Int32`）は、枝の型が違うというエラーになる。片方の枝の型は、もう片方へ届かない。
+* 調べている途中で、この issue の外の不具合を見つけた。`augment_if_expr` は、2つの枝の型を、OCaml の構造の等しさ（`=`）で比べる。別名で取り込んだ型（issue #50）は、元の名前の型と違うと判定される。`import Lib (Mode as Md, Up, Down);` の下で、`let n: Md := if c then m else Down();`（`m` は `Md`）は、「The branches of the `if`-expression have different types: `Md` and `Mode`」になる。作業の元のコミットでも同じである。この変更で、位置の型が枝へ届くようになり、`let found: Option[Md] := if c then None() else find();` でも同じエラーになるので、コードレビューで直した。`augment_if_expr` は、算術の式（issue #50）と同じく、2つの枝の型を `equal_ty` で比べる。`036-type-checker-paths/062-if-expression-branches-of-a-type-imported-under-a-nickname` が確かめる。

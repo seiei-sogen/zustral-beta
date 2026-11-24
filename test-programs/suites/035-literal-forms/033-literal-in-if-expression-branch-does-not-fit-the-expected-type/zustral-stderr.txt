@@ -1,0 +1,23 @@
+{
+  "module": "Test",
+  "kind": "Type Error",
+  "text": [
+    { "type": "text", "content": "The integer " },
+    { "type": "code", "content": "300" },
+    { "type": "text", "content": " does not fit the type " },
+    { "type": "type", "content": "Int8" },
+    { "type": "text", "content": "." }
+  ],
+  "span": {
+    "filename": "test-programs/suites/035-literal-forms/033-literal-in-if-expression-branch-does-not-fit-the-expected-type/Test.zum",
+    "startp": { "line": 4, "column": 8 },
+    "end": { "line": 4, "column": 44 }
+  },
+  "context": [
+    [ 2, "    function main(): ExitCode is" ],
+    [ 3, "        let c: Bool := true;" ],
+    [ 4, "        let x: Int8 := if c then 1 else 300;" ],
+    [ 5, "        printLn(x);" ],
+    [ 6, "        return ExitSuccess();" ]
+  ]
+}

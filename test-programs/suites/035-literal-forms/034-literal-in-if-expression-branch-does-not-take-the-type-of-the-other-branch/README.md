@@ -1,0 +1,1 @@
+Test that the type of one branch of an `if` expression does not reach the other: the literal takes the type expected of the expression, `Int64`, not the type of the other branch, `Int32`, so the branches have different types (issue #35).
