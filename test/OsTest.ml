@@ -16,6 +16,27 @@ let test_run_command _ =
   eq "derp" stdout;
   eq "" stderr
 
+(* Issue #173: a command that writes more to stderr than a pipe holds (65536
+   bytes on Linux) finishes, and all of its stderr comes back. Before,
+   `run_command` read the stdout of the command to its end first, the command
+   waited for room in the pipe of its stderr, and neither finished. *)
+let test_run_command_that_writes_much_to_stderr _ =
+  let (CommandOutput { code; stdout; stderr; _ }) =
+    run_command "echo out; head -c 300000 /dev/zero | tr '\\0' 'x' >&2; exit 3"
+  in
+  eq 3 code;
+  eq "out" stdout;
+  eq 300000 (String.length stderr)
+
+(* The shell reports a command it cannot parse on its own stderr, before it
+   runs anything: that report comes back too. The paths in the command of the
+   C compiler are not quoted, so an output path like `it's` gives one. *)
+let test_run_command_that_the_shell_cannot_parse _ =
+  let (CommandOutput { code; stdout; stderr; _ }) = run_command "echo 'unterminated" in
+  eq 2 code;
+  eq "" stdout;
+  eq true (String.length stderr > 0)
+
 (* A signal gives 128 and the system's number of the signal, as a shell
    reports it (issue #144). SIGKILL is 9 and SIGTERM 15 on every system.
    `run_command` never sees a stopped process: it waits for the command to
@@ -42,6 +63,8 @@ let test_read_file_of_a_million_lines _ =
 let suite =
   "Operating system" >::: [
       "run_command" >:: test_run_command;
+      "run_command of a command that writes much to stderr" >:: test_run_command_that_writes_much_to_stderr;
+      "run_command of a command that the shell cannot parse" >:: test_run_command_that_the_shell_cannot_parse;
       "exit_code" >:: test_exit_code;
       "read a file of a million lines" >:: test_read_file_of_a_million_lines
     ]

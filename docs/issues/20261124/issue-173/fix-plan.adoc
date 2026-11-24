@@ -1,0 +1,53 @@
+= issue #173 の修正計画: C コンパイラが stderr に多く書いても、コンパイラが終わるようにする
+
+== 目的
+
+issue #173 は、`zustral` が呼んだ C コンパイラが stderr に多く書くと、`zustral` が終わらないことを報告している。
+
+終わりの条件は、C コンパイラの出力の量にかかわらず、`zustral` が終わることである。
+
+== 現状
+
+`origin/master` で確かめた。stderr に 300 KB を書いて失敗する `cc` を `PATH` の先頭に置くと、`timeout 15 zustral compile H.zum --entrypoint=H:main --output=h` は、終了コード 124 で打ち切られる。
+
+原因は、`cli/Os.ml` の `run_command` である。子プロセスの stdout と stderr を、それぞれパイプで受ける。stdout を終わりまで読んでから、stderr を読む。子プロセスは、stderr のパイプがいっぱいになると（Linux では 65536 バイト）、書き込みで待つ。stdout は閉じないので、親も待ち続ける。
+
+関係するテストは、`test/OsTest.ml` の `test_run_command` と、`test/UnexecutedWordingTest.ml` の `test_command_killed_by_signal`（`kill -9 $$` を実行する）である。
+
+== 変更
+
+* `cli/Os.ml` の `run_command`: 子プロセスの stderr を、一時ファイルへ書かせる。パイプで受けるのは、stdout だけにする。コマンドの前の行に `exec 2> 一時ファイル` を置いて、シェルに渡す。終わったら、一時ファイルを読んで、消す。
+
+issue は、もう1つの直し方として、stdout と stderr を同時に読むことを挙げている。`Unix.select` で2つのパイプを交互に読む形になり、コードが増える。一時ファイルは、生成した C を置くのに、もう使っている（`cli/CliEngine.ml`）。
+
+`CommandOutput` の `command` は、元のコマンドのままにする。エラーの文面に出るからである。
+
+== テスト
+
+最初に書く、失敗するテスト: `test/OsTest.ml` の `test_run_command_that_writes_much_to_stderr`。stdout に `out` を、stderr に 300000 バイトを書いて、終了コード 3 で終わるコマンドを実行する。終了コード、stdout、stderr の長さを確かめる。直す前は、終わらない（`timeout 60 make test` が、終了コード 124 になる）。
+
+== 確認
+
+* 計測値: `cli/` は、計測の対象である。変われば、`measure.sh --record` で記録し直す。
+* エラーメッセージのテスト: 文面は増えない。
+* カバレッジ: 新しい行を、`test/OsTest.ml` と、C をコンパイルするすべてのテストが実行する。
+
+== 範囲外
+
+* C コンパイラの出力を、利用者に見せる量を切り詰めること。
+
+== セルフレビュー
+
+issue の本文に照らして見直した。
+
+* 「C コンパイラの出力の量にかかわらず、終わる」: stderr は、ファイルに書かれるので、子プロセスは待たない。stdout は、親が終わりまで読む。
+* シグナルで止まった場合: `kill -9 $$` の `$$` は、シェル自身の番号である。シェルが止まり、終了コードは、これまでと同じ 137 になる（`test_command_killed_by_signal` が通る）。
+* 呼び出し元: `run_command` を呼ぶのは、`compile_c_code` と、2つの単体テストだけである。
+* 見直しで足したこと: 一時ファイルの名前を、シェルに渡す前に `Filename.quote` で囲むこと。一時ディレクトリの名前に、空白があってもよい。
+
+== 実装の記録
+
+* コードレビューで直したこと: 初めは、コマンドを `{ コマンド; } 2> 一時ファイル` の形で渡していた。この形では、シェルがコマンドを構文解析できないとき（出力先のパスが `it's` のとき）、シェルの文面がパイプの側に出て、失われる。`exec 2> 一時ファイル` を前の行に置く形に変えた。テストは、`test_run_command_that_the_shell_cannot_parse` である。
+* `tools/refactoring/run-every-ci-check-locally.sh` の 14 個の検査は、すべて `ok` だった。
+* issue の手順で確かめた。偽の `cc` で、直す前は終了コード 124（打ち切り）、直した後は終了コード 255 で、300 KB の stderr を含むエラーをすぐに出す。
+* コードレビューが、前からある不具合を1つ見つけた。この PR では直さず、issue #194 にした。`compile_c_code` が、出力先のパスを引用符で囲まずにシェルへ渡す。`--output='x; touch pwned'` で、`touch pwned` が実行される（実行して確かめた）。

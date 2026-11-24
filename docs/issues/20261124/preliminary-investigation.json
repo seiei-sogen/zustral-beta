@@ -1,5 +1,5 @@
 {
-  "base_commit": "a51ca6680d6348a79d91d1be96839183682a7381",
+  "base_commit": "19f4baa9f8f46fcbac9bd02fec170d57d5608b7c",
   "issues": [
     {
       "number": 33,
@@ -72,8 +72,8 @@
       "title": "C コンパイラが stderr に多く書くと、コンパイラが止まったまま終わらない",
       "summary": "C コンパイラが stderr に多く書くと、コンパイラが止まったまま終わらない。",
       "depends_on": [],
-      "status": "queued",
-      "reason": "README の「次にやること」の3番。残っている不具合。"
+      "status": "done",
+      "reason": "PR を立てた。計画は issue-173/fix-plan.adoc。"
     },
     {
       "number": 175,
@@ -496,24 +496,21 @@
     }
   ],
   "next_issue": {
-    "number": 171,
-    "current_behavior": "`printLn(\"a\\qb\");` を持つプログラムで、`zustral compile … --target-type=c` が終了コード 0 で終わる（実行して確かめた）。issue によれば、実行すると `a\\qb` を出力する。",
+    "number": 173,
+    "current_behavior": "stderr に 300 KB を書いて終了コード 1 で終わる `cc` を `PATH` の先頭に置くと、`timeout 15 zustral compile H.zum --entrypoint=H:main --output=h` が終了コード 124 で打ち切られる（3d2905f のコンパイラで実行して確かめた）。",
     "related_code": [
-      "lib/Escape.ml: escape_list",
-      "lib/AbstractionPass.ml: abs_expr の CStringConstant",
-      "lib/GenericErrors.ml"
+      "cli/Os.ml: run_command, compile_c_code",
+      "cli/CliEngine.ml: 生成した C の一時ファイル"
     ],
     "related_tests": [
-      "test-programs/suites/034-early-and-late-stage-errors/009-bad-whitespace-escape",
-      "test-programs/suites/034-early-and-late-stage-errors/036-bad-whitespace-escape-in-a-constant",
-      "test-programs/suites/005-fixed-string"
+      "test/OsTest.ml: test_run_command",
+      "test/UnexecutedWordingTest.ml: test_command_killed_by_signal"
     ],
     "affected_ci_checks": [
-      "tools/refactoring/measure.sh の記録",
-      "エラーメッセージにテストがあること（新しい文面）"
+      "tools/refactoring/measure.sh の記録（cli/Os.ml の行数）"
     ],
     "risks": [
-      "知らないエスケープを書いていた利用者のプログラムが、通らなくなる。リポジトリの中にはない（全検査が通る）。"
+      "一時ディレクトリに書けないと、C コンパイラを呼ぶ前に失敗する。生成した C も同じ一時ディレクトリに書くので、新しい失敗の形ではない。"
     ]
   }
 }

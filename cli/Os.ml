@@ -62,16 +62,26 @@ let run_command (command: string): command_output =
     | Some path -> path
     | None -> c_compiler_error NoSpan PathVariableNotSet
   in
-  let (stdout_chan, stdin_chan, stderr_chan) = open_process_full command [|"PATH=" ^ path|] in
-  let stdout = read_stream_to_string stdout_chan
-  and stderr = read_stream_to_string stderr_chan in
-  let proc_stat = close_process_full (stdout_chan, stdin_chan, stderr_chan) in
-  CommandOutput {
-      command = command;
-      code = ProcessStatus.exit_code proc_stat;
-      stdout = stdout;
-      stderr = stderr
-    }
+  (* The command writes its stderr to a file, and only its stdout to a pipe.
+     With a pipe for each, the command waits when it fills the one that is not
+     being read, and this waits for the end of the other: neither finishes
+     (issue #173). *)
+  let stderr_path: string = Filename.temp_file "zustral_" ".stderr" in
+  (* The file may be gone already (a cleaner of the temporary directory). *)
+  Fun.protect ~finally:(fun () -> if Sys.file_exists stderr_path then Sys.remove stderr_path) (fun () ->
+      (* `exec` moves the stderr of the shell itself, on a line before the
+         command: what the shell says of a command it cannot parse is in the
+         file too. *)
+      let command_with_stderr_in_file: string = "exec 2> " ^ Filename.quote stderr_path ^ "\n" ^ command in
+      let (stdout_chan, stdin_chan, stderr_chan) = open_process_full command_with_stderr_in_file [|"PATH=" ^ path|] in
+      let stdout = read_stream_to_string stdout_chan in
+      let proc_stat = close_process_full (stdout_chan, stdin_chan, stderr_chan) in
+      CommandOutput {
+          command = command;
+          code = ProcessStatus.exit_code proc_stat;
+          stdout = stdout;
+          stderr = read_file_to_string stderr_path
+        })
 
 let compile_c_code (source_path: string) (output_path: string): command_output =
   let cmd = "cc " ^ source_path ^ " -fwrapv -lm -o " ^ output_path in
