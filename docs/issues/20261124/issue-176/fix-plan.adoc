@@ -97,3 +97,4 @@ The generic declaration `grow` keeps using itself with type arguments that nest 
 
 The compiler makes a copy of a generic declaration for each list of type arguments it is used with. A generic function or type that uses itself with a type argument that grows at each use, such as `Option[T]` for its type parameter `T`, needs copies without end.
 ----
+* PR を立てた後で、CI の「base ブランチとの等価性」の検査が終わらなくなった。この検査は、base のコンパイラでも、リポジトリのすべてのプログラムをコンパイルする。新しいテストのプログラムは、base のコンパイラでは終わらない。`tools/refactoring/equivalence.py` が、1つのプログラムに 600 秒まで待ち、時間切れを例外として落としていた。待つ時間を 60 秒にし、時間切れを、終了コードの代わりの結果（`did not finish`）として記録するようにした。手元で `tools/refactoring/check.sh FETCH_HEAD --quick` を実行して、4 分 11 秒で、違いあり（終了コード 1）で終わることを確かめた。

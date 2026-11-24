@@ -47,6 +47,8 @@ CLI_TESTS = ROOT / "test-programs" / "cli"
 CLI_UNSET_VARIABLES = "unset-environment-variables.txt"
 CLI_NOT_INPUTS = {"args.txt", "expected.txt", "README.md", CLI_UNSET_VARIABLES}
 FILES = ("exit", "out.c", "stdout", "stderr", "files")
+# The slowest program of the repository compiles in a few seconds.
+SECONDS_A_COMPILER_MAY_TAKE = 60
 # Generated names: a fixed prefix or a suffix, then the number.
 GENERATED = re.compile(r"\b(?:(decl_|mono_|meth_|_t|tmp)|([A-Za-z_][A-Za-z0-9_]*?_tmp_ref))(\d+)\b")
 
@@ -139,15 +141,21 @@ def run_one(compiler: str, outdir: pathlib.Path, name: str, words: list[str], in
         unset = inputs / CLI_UNSET_VARIABLES if inputs is not None else None
         names = unset.read_text().split() if unset is not None and unset.exists() else []
         environment = {name: value for name, value in os.environ.items() if name not in names}
-        done = subprocess.run(command, cwd=cwd, env=environment, capture_output=True, timeout=600)
+        # A compiler that does not finish is a behaviour to compare, like an exit status: the
+        # base compiler never finishes the programs that test the fix of issue #176.
+        try:
+            done = subprocess.run(command, cwd=cwd, env=environment, capture_output=True, timeout=SECONDS_A_COMPILER_MAY_TAKE)
+            status, stdout, stderr = str(done.returncode), done.stdout, done.stderr
+        except subprocess.TimeoutExpired:
+            status, stdout, stderr = "did not finish", b"", b""
         generated = pathlib.Path(c_path).read_bytes() if os.path.exists(c_path) else b""
         # The compiler names its temporary C file at random.
         scrub = lambda data: re.sub(rb"[^\s'\"`]*/zustral_[0-9a-f]+\.c", b"$TMP.c", data.replace(cwd.encode(), b"$CWD").replace(str(ROOT).encode(), b"$ROOT"))
         left_behind = sorted(f.name for f in pathlib.Path(cwd).iterdir() if f.name != "out.c" and f.name not in copied)
-        (target / "exit").write_text(f"{done.returncode}\n")
+        (target / "exit").write_text(f"{status}\n")
         (target / "out.c").write_bytes(scrub(generated))
-        (target / "stdout").write_bytes(scrub(done.stdout))
-        (target / "stderr").write_bytes(scrub(done.stderr))
+        (target / "stdout").write_bytes(scrub(stdout))
+        (target / "stderr").write_bytes(scrub(stderr))
         (target / "files").write_text("".join(name + "\n" for name in left_behind))
     return name
 
