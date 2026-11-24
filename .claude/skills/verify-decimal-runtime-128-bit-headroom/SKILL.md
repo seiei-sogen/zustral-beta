@@ -93,6 +93,7 @@ git log --oneline 74ebd020d18a34db802d3c1bc3cca69ab0374186..HEAD -- docs/researc
   - **計算した値が正しいこと**（丸めモードどおりに丸めた商になっているか）。これは `run.sh` の突き合わせが、Python の有理数計算と比べて確かめる。CBMC で値まで確かめると、128 ビットの除算や乗算の等しさを示すことになり、`zd_round` も `au_dec_lit` も 10 分を超えて終わらなかった（2026-11-24 に試した）。
   - 失敗すべきときに失敗すること。ただし `zd_add` と `zd_sub` と、`zd_div` の割る数が 0 の場合は確かめる。
   - 符号付きと符号なしの間の変換。`zd_abs` と `zd_from_double` は、わざと変換で値を切り詰めるので、CBMC の `--conversion-check` は使わない。結果が精度に収まることの表明が、変換で値が変わった場合を捕まえる。
+  - 符号なしの値の左シフトで、上の桁が落ちること。CBMC の `--unsigned-overflow-check` は、符号なしの `<<` を見ない（CBMC 5.76.1 で確かめた）。`zd_from_double` の `(zd_u128)mantissa << exponent`、`whole << shift`、`kept << 1` は、コードの上の打ち切り（`exponent > 74` など）で収まると読んで確かめた。この打ち切りを変えたら、読み直す。
   - `zd_to_double`（libc の `strtod` を呼ぶ）、`au_dec_debug_print`、止まる形の入口（`au_dec_*`）のうち、`zd_*` を呼んで止めるだけのもの。
   - C コンパイラが CBMC と同じ意味で `__int128` と `__builtin_*_overflow` を訳すこと。CBMC は、64 ビットの gcc と clang の意味（issue #68）で解釈する。
 - **前提。** コンパイラが、上の範囲の外の値を実行時に渡さないこと。
