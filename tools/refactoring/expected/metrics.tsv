@@ -57,7 +57,7 @@ lib/LexEnv.ml	86	2	0	0	0	0	0	1	0	0	0
 lib/Lexer.mll	182	4	0	2	0	0	0	0	0	0	0
 lib/LiftControlPass.ml	221	0	0	0	0	0	0	0	0	0	0
 lib/LineageOfMonomorph.ml	88	1	0	0	0	0	0	0	0	0	0
-lib/LinearityCheck.ml	659	17	0	0	0	0	0	2	0	0	0
+lib/LinearityCheck.ml	642	17	0	0	0	0	0	2	0	0	0
 lib/LinearityErrors.ml	205	0	0	0	0	0	0	0	0	0	0
 lib/LiteralTyping.ml	183	2	0	0	0	0	0	0	0	0	0
 lib/MonoType.ml	37	0	0	0	0	0	0	0	0	0	0

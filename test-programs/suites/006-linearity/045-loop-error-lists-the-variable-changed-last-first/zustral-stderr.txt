@@ -1,0 +1,29 @@
+{
+  "module": "Test",
+  "kind": "Linearity Error",
+  "text": [
+    { "type": "text", "content": "The " },
+    { "type": "text", "content": "variables " },
+    { "type": "code", "content": "zeta, alpha" },
+    { "type": "text", "content": " were " },
+    {
+      "type": "text",
+      "content": "consumed in the loop, without afterwards being reassigned."
+    }
+  ],
+  "span": {
+    "filename": "test-programs/suites/006-linearity/045-loop-error-lists-the-variable-changed-last-first/Test.zum",
+    "startp": { "line": 14, "column": 8 },
+    "end": { "line": 17, "column": 18 }
+  },
+  "context": [
+    [ 12, "        let zeta: R := R(x => 1);" ],
+    [ 13, "        let alpha: R := R(x => 2);" ],
+    [ 14, "        while false do" ],
+    [ 15, "            consume(alpha);" ],
+    [ 16, "            consume(zeta);" ],
+    [ 17, "        end while;" ],
+    [ 18, "        return ExitSuccess();" ],
+    [ 19, "    end;" ]
+  ]
+}

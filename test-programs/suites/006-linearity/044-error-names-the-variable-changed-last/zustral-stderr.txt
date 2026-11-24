@@ -1,0 +1,21 @@
+{
+  "module": "Test",
+  "kind": "Linearity Error",
+  "text": [
+    { "type": "text", "content": "The variable " },
+    { "type": "code", "content": "zeta" },
+    { "type": "text", "content": " has already been consumed." }
+  ],
+  "span": {
+    "filename": "test-programs/suites/006-linearity/044-error-names-the-variable-changed-last/Test.zum",
+    "startp": { "line": 22, "column": 8 },
+    "end": { "line": 22, "column": 33 }
+  },
+  "context": [
+    [ 20, "        consume(alpha);" ],
+    [ 21, "        consume(zeta);" ],
+    [ 22, "        consumeBoth(alpha, zeta);" ],
+    [ 23, "        return ExitSuccess();" ],
+    [ 24, "    end;" ]
+  ]
+}
