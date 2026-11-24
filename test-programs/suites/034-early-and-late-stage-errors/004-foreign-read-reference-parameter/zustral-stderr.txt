@@ -15,11 +15,10 @@
   ],
   "span": {
     "filename": "test-programs/suites/034-early-and-late-stage-errors/004-foreign-read-reference-parameter/Test.zum",
-    "startp": { "line": 4, "column": 48 },
+    "startp": { "line": 5, "column": 4 },
     "end": { "line": 6, "column": 8 }
   },
   "context": [
-    [ 2, "" ],
     [ 3, "module body Test is" ],
     [ 4, "    pragma Foreign_Import(External_Name => \"f\");" ],
     [ 5, "    function f(r: &[Int32, Static]): Int32 is" ],

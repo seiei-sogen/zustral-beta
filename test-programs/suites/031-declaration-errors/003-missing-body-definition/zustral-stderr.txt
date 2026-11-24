@@ -10,7 +10,7 @@
   ],
   "span": {
     "filename": "test-programs/suites/031-declaration-errors/003-missing-body-definition/Test.zui",
-    "startp": { "line": 1, "column": 14 },
+    "startp": { "line": 2, "column": 4 },
     "end": { "line": 2, "column": 26 }
   },
   "context": [

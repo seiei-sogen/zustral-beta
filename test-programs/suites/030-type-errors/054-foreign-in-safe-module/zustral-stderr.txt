@@ -9,7 +9,7 @@
   ],
   "span": {
     "filename": "test-programs/suites/030-type-errors/054-foreign-in-safe-module/Test.zum",
-    "startp": { "line": 2, "column": 54 },
+    "startp": { "line": 3, "column": 4 },
     "end": { "line": 4, "column": 8 }
   },
   "context": [

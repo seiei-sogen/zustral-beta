@@ -15,12 +15,10 @@
   ],
   "span": {
     "filename": "test-programs/suites/038-late-stage-paths/013-instance-method-missing/Test.zum",
-    "startp": { "line": 5, "column": 8 },
+    "startp": { "line": 7, "column": 4 },
     "end": { "line": 11, "column": 8 }
   },
   "context": [
-    [ 3, "        method foo(value: T): Unit;" ],
-    [ 4, "        method bar(value: T): Unit;" ],
     [ 5, "    end;" ],
     [ 6, "" ],
     [ 7, "    instance Foo(Int32) is" ],

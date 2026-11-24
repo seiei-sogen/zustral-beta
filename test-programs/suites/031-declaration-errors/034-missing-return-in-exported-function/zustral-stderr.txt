@@ -10,11 +10,10 @@
   ],
   "span": {
     "filename": "test-programs/suites/031-declaration-errors/034-missing-return-in-exported-function/Test.zum",
-    "startp": { "line": 4, "column": 55 },
+    "startp": { "line": 5, "column": 4 },
     "end": { "line": 7, "column": 8 }
   },
   "context": [
-    [ 2, "" ],
     [ 3, "module body Test is" ],
     [ 4, "    pragma Foreign_Export(External_Name => \"exported\");" ],
     [ 5, "    function exported(x: Int32): Int32 is" ],

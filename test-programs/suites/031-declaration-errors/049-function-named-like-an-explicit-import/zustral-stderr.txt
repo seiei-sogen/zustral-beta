@@ -10,11 +10,10 @@
   ],
   "span": {
     "filename": "test-programs/suites/031-declaration-errors/049-function-named-like-an-explicit-import/Test.zum",
-    "startp": { "line": 4, "column": 19 },
+    "startp": { "line": 5, "column": 4 },
     "end": { "line": 7, "column": 8 }
   },
   "context": [
-    [ 2, "import Zustral.Memory (nullCheck);" ],
     [ 3, "" ],
     [ 4, "module body Test is" ],
     [ 5, "    function nullCheck(x: Int32): Int32 is" ],

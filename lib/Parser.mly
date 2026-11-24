@@ -214,9 +214,11 @@ function_decl:
   | typarams=generic_segment
     FUNCTION name=identifier LPAREN params=parameter_list RPAREN
     COLON rt=typespec SEMI
-    { ConcreteFunctionDecl (from_loc $loc, name, typarams, params, rt, Docstring "") }
+    { ConcreteFunctionDecl (from_loc $sloc, name, typarams, params, rt, Docstring "") }
   ;
 
+/* It can be empty, and then `$loc` of a rule that starts with it begins at the
+   end of the token before: those rules take `$sloc`, which skips it (issue #172). */
 generic_segment:
   | option(generic_segment_inner) { Option.value $1 ~default:[] }
   ;
@@ -241,7 +243,7 @@ method_decl:
 instance_decl:
   | typarams=generic_segment
     INSTANCE name=identifier LPAREN arg=typespec RPAREN SEMI
-    { ConcreteInstanceDecl (from_loc $loc, name, typarams, arg, Docstring "") }
+    { ConcreteInstanceDecl (from_loc $sloc, name, typarams, arg, Docstring "") }
   ;
 
 body_decl:
@@ -266,7 +268,7 @@ function_def:
   | typarams=generic_segment
     FUNCTION name=identifier LPAREN params=parameter_list RPAREN
     COLON rt=typespec IS body=block? END SEMI
-    { ConcreteFunctionDef (from_loc $loc, name, typarams, params, rt, Option.value body ~default:(CBlock (from_loc $loc, [])), Docstring "", []) }
+    { ConcreteFunctionDef (from_loc $sloc, name, typarams, params, rt, Option.value body ~default:(CBlock (from_loc $sloc, [])), Docstring "", []) }
   ;
 
 pragma:
@@ -281,7 +283,7 @@ instance_def:
     INSTANCE name=identifier LPAREN arg=typespec RPAREN IS
     methods=method_def*
     END SEMI
-    { ConcreteInstanceDef (ConcreteInstance (from_loc $loc, name, typarams, arg, methods, Docstring "")) }
+    { ConcreteInstanceDef (ConcreteInstance (from_loc $sloc, name, typarams, arg, methods, Docstring "")) }
   ;
 
 method_def:

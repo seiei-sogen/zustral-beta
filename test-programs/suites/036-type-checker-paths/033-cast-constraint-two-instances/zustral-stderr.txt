@@ -9,11 +9,10 @@
   ],
   "span": {
     "filename": "test-programs/suites/036-type-checker-paths/033-cast-constraint-two-instances/Test.zum",
-    "startp": { "line": 3, "column": 19 },
+    "startp": { "line": 4, "column": 4 },
     "end": { "line": 8, "column": 8 }
   },
   "context": [
-    [ 1, "import Test_TC (Describe, describe);" ],
     [ 2, "" ],
     [ 3, "module body Test is" ],
     [ 4, "    instance Describe(Int32) is" ],

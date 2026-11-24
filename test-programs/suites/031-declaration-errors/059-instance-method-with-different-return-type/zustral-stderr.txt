@@ -15,12 +15,10 @@
   ],
   "span": {
     "filename": "test-programs/suites/031-declaration-errors/059-instance-method-with-different-return-type/Test.zum",
-    "startp": { "line": 4, "column": 8 },
+    "startp": { "line": 6, "column": 4 },
     "end": { "line": 10, "column": 8 }
   },
   "context": [
-    [ 2, "    typeclass One(T: Free) is" ],
-    [ 3, "        method one(x: T): Int64;" ],
     [ 4, "    end;" ],
     [ 5, "" ],
     [ 6, "    instance One(Int32) is" ],

@@ -11,7 +11,7 @@
   ],
   "span": {
     "filename": "test-programs/suites/031-declaration-errors/077-foreign-export-in-safe-module/Test.zum",
-    "startp": { "line": 2, "column": 58 },
+    "startp": { "line": 3, "column": 4 },
     "end": { "line": 5, "column": 8 }
   },
   "context": [

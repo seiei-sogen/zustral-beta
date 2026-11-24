@@ -1,0 +1,8 @@
+module body Test is
+    function main(): ExitCode is
+        let s: Span[Nat8, Static] := "two
+lines";
+        let x: Int32 := true;
+        return ExitSuccess();
+    end;
+end module body.

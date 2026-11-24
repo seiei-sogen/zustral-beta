@@ -15,7 +15,7 @@
   ],
   "span": {
     "filename": "test-programs/suites/030-type-errors/114-type-in-region-position-of-reference/Test.zum",
-    "startp": { "line": 1, "column": 19 },
+    "startp": { "line": 2, "column": 4 },
     "end": { "line": 4, "column": 8 }
   },
   "context": [

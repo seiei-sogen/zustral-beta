@@ -8,7 +8,9 @@
 (** Everything the compiler asks of the operating system: reading and writing
     files, and running the C compiler. *)
 
-(** Read the file at the given path into a string. *)
+(** Read the file at the given path into a string, without the whitespace at
+    its end. The whitespace at its start stays: the positions in a source file
+    count from its first line (issue #172). *)
 val read_file_to_string : string -> string
 
 (** Write the contents of a string to a file.

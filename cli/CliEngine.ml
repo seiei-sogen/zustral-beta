@@ -45,7 +45,8 @@ let make_module_source (m: mod_source): Pipeline.module_source =
 
 let parse_source_files (mods: mod_source list): (Pipeline.module_source list * source_map) =
   let contents = List.map make_module_source mods in
-  (* Build source map for error handling *)
+  (* Build source map for error handling. The built-in modules are in it, so
+     that an error in one of them shows its lines too (issue #172). *)
   let source_maps =
     List.map (fun source ->
         match source with
@@ -58,7 +59,7 @@ let parse_source_files (mods: mod_source list): (Pipeline.module_source list * s
            let smap = SourceMap.empty in
            let smap = SourceMap.add body_filename body_code smap in
            smap)
-      contents
+      (contents @ BuiltInModuleSources.built_in_module_sources)
   in
   let source_map =
     List.fold_left
@@ -146,14 +147,13 @@ and exec_compile (modules: mod_source list) (target: target) (error_reporting_mo
 
 and try_adding_source_ctx (error: zustral_error) (source_map: source_map): zustral_error =
   let (ZustralError { location; _ }) = error in
-  match location_span location with
-  | Some span ->
-     let (Span { filename; _ }) = span in
-     (match (SourceMap.find_opt filename source_map) with
-      | Some code ->
-         add_source_ctx error (get_source_ctx code span)
-      | None ->
-         error)
+  let source_ctx_of_span (span: Span.span): source_ctx option =
+    let (Span { filename; _ }) = span in
+    Option.map (fun code -> get_source_ctx code span) (SourceMap.find_opt filename source_map)
+  in
+  match Option.bind (location_span location) source_ctx_of_span with
+  | Some ctx ->
+     add_source_ctx error ctx
   | None ->
      error
 

@@ -15,12 +15,10 @@
   ],
   "span": {
     "filename": "test-programs/suites/036-type-checker-paths/015-instance-missing-method/Test.zum",
-    "startp": { "line": 5, "column": 8 },
+    "startp": { "line": 7, "column": 4 },
     "end": { "line": 11, "column": 8 }
   },
   "context": [
-    [ 3, "        method area(x: T): Int32;" ],
-    [ 4, "        method perimeter(x: T): Int32;" ],
     [ 5, "    end;" ],
     [ 6, "" ],
     [ 7, "    instance Shape(Int32) is" ],

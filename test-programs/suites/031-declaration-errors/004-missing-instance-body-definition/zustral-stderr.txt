@@ -13,12 +13,10 @@
   ],
   "span": {
     "filename": "test-programs/suites/031-declaration-errors/004-missing-instance-body-definition/Test.zui",
-    "startp": { "line": 3, "column": 8 },
+    "startp": { "line": 5, "column": 4 },
     "end": { "line": 5, "column": 24 }
   },
   "context": [
-    [ 1, "module Test is" ],
-    [ 2, "    typeclass Foo(T: Free) is" ],
     [ 3, "    end;" ],
     [ 4, "" ],
     [ 5, "    instance Foo(Int32);" ],

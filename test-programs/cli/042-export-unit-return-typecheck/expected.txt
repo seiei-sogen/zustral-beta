@@ -15,11 +15,10 @@ files:
   ],
   "span": {
     "filename": "Test.zum",
-    "startp": { "line": 4, "column": 48 },
+    "startp": { "line": 5, "column": 4 },
     "end": { "line": 7, "column": 8 }
   },
   "context": [
-    [ 2, "" ],
     [ 3, "module body Test is" ],
     [ 4, "    pragma Foreign_Export(External_Name => \"f\");" ],
     [ 5, "    function f(): Unit is" ],

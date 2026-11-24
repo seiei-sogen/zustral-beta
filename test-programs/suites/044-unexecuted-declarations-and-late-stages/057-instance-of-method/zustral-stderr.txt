@@ -8,12 +8,10 @@
   ],
   "span": {
     "filename": "test-programs/suites/044-unexecuted-declarations-and-late-stages/057-instance-of-method/Test.zum",
-    "startp": { "line": 4, "column": 8 },
+    "startp": { "line": 6, "column": 4 },
     "end": { "line": 7, "column": 8 }
   },
   "context": [
-    [ 2, "    typeclass C(T: Free) is" ],
-    [ 3, "        method K(x: T): Unit;" ],
     [ 4, "    end;" ],
     [ 5, "" ],
     [ 6, "    instance K(Int32) is" ],

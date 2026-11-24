@@ -134,8 +134,8 @@ rule token = parse
   (* Strings and docstrings. The rule that reads the rest of the string moves
      the start of the token to its last lexeme, the closing quote, so the start
      is put back: the span of a string constant begins at its opening quote. *)
-  | "\"\"\"" { let start = lexbuf.lex_start_p in let token = read_triple_string [] lexbuf in lexbuf.lex_start_p <- start; token }
-  | '"' { let start = lexbuf.lex_start_p in let token = read_string [] lexbuf in lexbuf.lex_start_p <- start; token }
+  | "\"\"\"" { let start = lexbuf.lex_start_p in let token = read_triple_string start [] lexbuf in lexbuf.lex_start_p <- start; token }
+  | '"' { let start = lexbuf.lex_start_p in let token = read_string start [] lexbuf in lexbuf.lex_start_p <- start; token }
   (* Identifiers and constants *)
   | "nil" { NIL }
   | "true" { TRUE }
@@ -165,18 +165,22 @@ rule token = parse
 (* `pieces` holds the text of the literal read so far, last piece first.
    Each literal starts from the empty list, so nothing is left over from the
    literal before it or from a file that ended inside one. *)
-and read_string pieces = parse
+(* `opening_quote` is where the literal starts. A literal that the file ends
+   inside is reported from there: the cause is the quote that nothing closes,
+   not the end of the file (issue #172). *)
+and read_string opening_quote pieces = parse
   | '"' { STRING_CONSTANT (literal_text pieces) }
-  | '\\' '"' { read_string ("\"" :: pieces) lexbuf }
-  | '\\' '\\' { read_string ("\\\\" :: pieces) lexbuf }
-  | [^ '"'] { read_string (Lexing.lexeme lexbuf :: pieces) lexbuf }
-  | eof { parse_error (AtSpan (Span.from_lexbuf lexbuf)) StringEof }
+  | '\\' '"' { read_string opening_quote ("\"" :: pieces) lexbuf }
+  | '\\' '\\' { read_string opening_quote ("\\\\" :: pieces) lexbuf }
+  | '\n' { new_line lexbuf; read_string opening_quote ("\n" :: pieces) lexbuf }
+  | [^ '"'] { read_string opening_quote (Lexing.lexeme lexbuf :: pieces) lexbuf }
+  | eof { lexbuf.lex_start_p <- opening_quote; parse_error (AtSpan (Span.from_lexbuf lexbuf)) StringEof }
   | _ { parse_error (AtSpan (Span.from_lexbuf lexbuf)) (StringInvalidCharacter (Lexing.lexeme lexbuf)) }
 
-and read_triple_string pieces = parse
+and read_triple_string opening_quote pieces = parse
   | "\"\"\"" { TRIPLE_STRING_CONSTANT (literal_text pieces) }
-  | '\n' { new_line lexbuf; read_triple_string ("\n" :: pieces) lexbuf }
-  | '\\' "\"\"\"" { read_triple_string ("\"\"\"" :: pieces) lexbuf }
-  | '\\' '\\' { read_triple_string ("\\\\" :: pieces) lexbuf }
-  | eof { parse_error (AtSpan (Span.from_lexbuf lexbuf)) TripleStringEof }
-  | _ { read_triple_string (Lexing.lexeme lexbuf :: pieces) lexbuf }
+  | '\n' { new_line lexbuf; read_triple_string opening_quote ("\n" :: pieces) lexbuf }
+  | '\\' "\"\"\"" { read_triple_string opening_quote ("\"\"\"" :: pieces) lexbuf }
+  | '\\' '\\' { read_triple_string opening_quote ("\\\\" :: pieces) lexbuf }
+  | eof { lexbuf.lex_start_p <- opening_quote; parse_error (AtSpan (Span.from_lexbuf lexbuf)) TripleStringEof }
+  | _ { read_triple_string opening_quote (Lexing.lexeme lexbuf :: pieces) lexbuf }

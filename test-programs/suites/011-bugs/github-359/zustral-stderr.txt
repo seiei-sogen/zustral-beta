@@ -13,12 +13,10 @@
   ],
   "span": {
     "filename": "test-programs/suites/011-bugs/github-359/Test.zum",
-    "startp": { "line": 4, "column": 8 },
+    "startp": { "line": 6, "column": 4 },
     "end": { "line": 8, "column": 8 }
   },
   "context": [
-    [ 2, "    record Foo[A: Free]: Free is" ],
-    [ 3, "        a: A;" ],
     [ 4, "    end;" ],
     [ 5, "" ],
     [ 6, "    function foo(f: Foo[Int32, Int32]): Unit is" ],

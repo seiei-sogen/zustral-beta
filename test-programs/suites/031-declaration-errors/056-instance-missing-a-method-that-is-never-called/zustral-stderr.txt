@@ -15,12 +15,10 @@
   ],
   "span": {
     "filename": "test-programs/suites/031-declaration-errors/056-instance-missing-a-method-that-is-never-called/Test.zum",
-    "startp": { "line": 5, "column": 8 },
+    "startp": { "line": 7, "column": 4 },
     "end": { "line": 11, "column": 8 }
   },
   "context": [
-    [ 3, "        method one(x: T): Int64;" ],
-    [ 4, "        method two(x: T): Int64;" ],
     [ 5, "    end;" ],
     [ 6, "" ],
     [ 7, "    instance Two(Int32) is" ],

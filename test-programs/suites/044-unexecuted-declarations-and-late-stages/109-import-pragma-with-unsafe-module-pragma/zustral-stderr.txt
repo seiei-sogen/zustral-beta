@@ -9,11 +9,10 @@
   ],
   "span": {
     "filename": "test-programs/suites/044-unexecuted-declarations-and-late-stages/109-import-pragma-with-unsafe-module-pragma/Test.zum",
-    "startp": { "line": 5, "column": 25 },
+    "startp": { "line": 6, "column": 4 },
     "end": { "line": 8, "column": 8 }
   },
   "context": [
-    [ 3, "module body Test is" ],
     [ 4, "    pragma Foreign_Import(External_Name => \"abs\");" ],
     [ 5, "    pragma Unsafe_Module;" ],
     [ 6, "    function f(x: Int32): Int32 is" ],

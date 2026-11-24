@@ -15,12 +15,10 @@
   ],
   "span": {
     "filename": "test-programs/suites/031-declaration-errors/060-instance-method-with-different-type-parameters/Test.zum",
-    "startp": { "line": 5, "column": 8 },
+    "startp": { "line": 7, "column": 4 },
     "end": { "line": 11, "column": 8 }
   },
   "context": [
-    [ 3, "        generic [R: Region]" ],
-    [ 4, "        method show(value: &[T, R]): Unit;" ],
     [ 5, "    end;" ],
     [ 6, "" ],
     [ 7, "    instance Show(Int32) is" ],
