@@ -23,3 +23,10 @@ let add_region (place: place) m n r =
      generic_error place RegionAlreadyExists
   | None ->
      IdentifierMap.add n r m
+
+let count_regions_named_for_borrows_of (m: region_map) (name_of_first: string): int =
+  let is_named_for_the_borrows (_: Identifier.identifier) (region: region): bool =
+    let name: string = Identifier.ident_string (region_name region) in
+    String.equal name name_of_first || String.starts_with ~prefix:(name_of_first ^ " (") name
+  in
+  IdentifierMap.cardinal (IdentifierMap.filter is_named_for_the_borrows m)

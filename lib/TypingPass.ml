@@ -412,12 +412,15 @@ and augment_for (ctx: stmt_ctx) (lexenv: lexenv) (supply: Supply.t) (span: span)
       let (b', lexenv, supply) = augment_stmt ctx lexenv supply body in
       (TFor (span, name, i', f', b'), remove_var lexenv name, supply))
 
-and augment_borrow (ctx: stmt_ctx) (lexenv: lexenv) (supply: Supply.t) (span: span) (original: identifier) (rename: identifier) (declared_reference: (borrowing_mode * qtypespec) option) (region: identifier) (body: astmt) (mode: borrow_stmt_kind): tstmt * lexenv * Supply.t =
+and augment_borrow (ctx: stmt_ctx) (lexenv: lexenv) (supply: Supply.t) (span: span) (borrowed_variable: qident) (rename: identifier) (declared_reference: (borrowing_mode * qtypespec) option) (region: identifier) (body: astmt) (mode: borrow_stmt_kind): tstmt * lexenv * Supply.t =
   let ctx = stmt_at ctx span in
-  let (StmtCtx (module_name, env, rm, typarams, _, place)) = ctx in
+  let (StmtCtx (_, env, rm, typarams, _, place)) = ctx in
   (let _ = check_var_doesnt_collide_with_decl ctx rename in
    let _ = check_region_name_is_free ctx region in
-      (match get_variable place env lexenv (make_qident (module_name, original, original)) with
+      (* The name the program wrote: an imported constant is found in the
+         module that declares it (issue #178). *)
+      let original: identifier = local_name borrowed_variable in
+      (match get_variable place env lexenv borrowed_variable with
        | Some (_, VarConstant) ->
           type_error place (CannotBorrowConstant original)
        | Some (orig_ty, VarLexical src) ->
@@ -448,7 +451,24 @@ and augment_borrow (ctx: stmt_ctx) (lexenv: lexenv) (supply: Supply.t) (span: sp
                (* And anything else is fine. *)
                ()
           in
-          let (region_obj, supply) = fresh_region region supply in
+          (* An error message names a region. An anonymous borrow (`&x`) has
+             no name the program wrote, only the one the desugaring made
+             (`_tmp_region_1`), so its region is named by the variable it
+             borrows (issue #178). *)
+          let region_name_in_messages: identifier =
+            match declared_reference with
+            | Some _ ->
+               region
+            | None ->
+               (* A statement can borrow one variable more than once
+                  (`same(&x, &x)`). The regions of the later borrows have a
+                  number, so that a message can tell them apart. *)
+               let name_of_first: string = "region of the borrow of " ^ ident_string original in
+               (match RegionMap.count_regions_named_for_borrows_of rm name_of_first with
+                | 0 -> make_ident name_of_first
+                | earlier -> make_ident (name_of_first ^ " (" ^ string_of_int (earlier + 1) ^ ")"))
+          in
+          let (region_obj, supply) = fresh_region region_name_in_messages supply in
           let refty =
             (match mode with
              | Read ->

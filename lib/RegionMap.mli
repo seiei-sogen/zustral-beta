@@ -17,3 +17,8 @@ val empty_region_map : region_map
 val add_region : Error.place -> region_map -> identifier -> region -> region_map
 
 val get_region : region_map -> identifier -> region option
+
+(** How many regions of the map are named for an anonymous borrow of one
+    variable: the first has the given name, and each later one that name and
+    its number in parentheses. *)
+val count_regions_named_for_borrows_of : region_map -> string -> int

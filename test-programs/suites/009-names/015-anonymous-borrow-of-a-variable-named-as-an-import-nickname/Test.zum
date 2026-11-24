@@ -1,0 +1,25 @@
+import Lib (c as limit);
+
+module body Test is
+    generic [R: Region]
+    function read(r: &[Int32, R]): Int32 is
+        return !r;
+    end;
+
+    generic [R: Region]
+    function readThroughWriteReference(r: &![Int32, R]): Int32 is
+        return !r;
+    end;
+
+    generic [R: Region]
+    function readThroughReborrow(limit: &![Int32, R]): Int32 is
+        return readThroughWriteReference(&~limit);
+    end;
+
+    function main(): ExitCode is
+        var limit: Int32 := 2;
+        printLn(read(&limit));
+        printLn(readThroughReborrow(&!limit));
+        return ExitSuccess();
+    end;
+end module body.

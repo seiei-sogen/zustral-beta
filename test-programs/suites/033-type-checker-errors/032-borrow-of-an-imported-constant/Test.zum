@@ -1,0 +1,13 @@
+import Lib (c);
+
+module body Test is
+    generic [R: Region]
+    function show(r: &[Int32, R]): Unit is
+        return nil;
+    end;
+
+    function main(): ExitCode is
+        show(&c);
+        return ExitSuccess();
+    end;
+end module body.

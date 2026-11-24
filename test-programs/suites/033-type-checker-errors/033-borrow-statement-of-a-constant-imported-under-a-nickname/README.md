@@ -1,0 +1,1 @@
+Test that a `borrow` statement of a constant imported under a nickname is an error that names the constant by the nickname the program wrote (issue #178). Before, the error was ``I can't find a variable named `limit`.``

@@ -1,0 +1,21 @@
+{
+  "module": "Test",
+  "kind": "Type Error",
+  "text": [
+    { "type": "text", "content": "Cannot borrow the constant " },
+    { "type": "code", "content": "c" },
+    { "type": "text", "content": ": only a variable can be borrowed." }
+  ],
+  "span": {
+    "filename": "test-programs/suites/033-type-checker-errors/032-borrow-of-an-imported-constant/Test.zum",
+    "startp": { "line": 10, "column": 8 },
+    "end": { "line": 10, "column": 17 }
+  },
+  "context": [
+    [ 8, "" ],
+    [ 9, "    function main(): ExitCode is" ],
+    [ 10, "        show(&c);" ],
+    [ 11, "        return ExitSuccess();" ],
+    [ 12, "    end;" ]
+  ]
+}

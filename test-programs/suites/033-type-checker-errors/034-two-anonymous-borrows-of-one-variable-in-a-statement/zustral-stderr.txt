@@ -1,0 +1,24 @@
+{
+  "module": "Test",
+  "kind": "Type Error",
+  "text": [
+    { "type": "text", "content": "The type parameter " },
+    { "type": "code", "content": "R" },
+    { "type": "text", "content": " cannot be bound to both " },
+    { "type": "type", "content": "region of the borrow of x" },
+    { "type": "text", "content": " and " },
+    { "type": "type", "content": "region of the borrow of x (2)" }
+  ],
+  "span": {
+    "filename": "test-programs/suites/033-type-checker-errors/034-two-anonymous-borrows-of-one-variable-in-a-statement/Test.zum",
+    "startp": { "line": 9, "column": 8 },
+    "end": { "line": 9, "column": 21 }
+  },
+  "context": [
+    [ 7, "    function main(): ExitCode is" ],
+    [ 8, "        let x: Int32 := 1;" ],
+    [ 9, "        same(&x, &x);" ],
+    [ 10, "        return ExitSuccess();" ],
+    [ 11, "    end;" ]
+  ]
+}

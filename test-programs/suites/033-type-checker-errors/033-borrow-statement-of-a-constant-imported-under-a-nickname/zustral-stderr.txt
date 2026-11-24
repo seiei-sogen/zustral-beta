@@ -1,0 +1,23 @@
+{
+  "module": "Test",
+  "kind": "Type Error",
+  "text": [
+    { "type": "text", "content": "Cannot borrow the constant " },
+    { "type": "code", "content": "limit" },
+    { "type": "text", "content": ": only a variable can be borrowed." }
+  ],
+  "span": {
+    "filename": "test-programs/suites/033-type-checker-errors/033-borrow-statement-of-a-constant-imported-under-a-nickname/Test.zum",
+    "startp": { "line": 5, "column": 8 },
+    "end": { "line": 7, "column": 19 }
+  },
+  "context": [
+    [ 3, "module body Test is" ],
+    [ 4, "    function main(): ExitCode is" ],
+    [ 5, "        borrow r: &[Int32, R] := &limit do" ],
+    [ 6, "            printLn(!r);" ],
+    [ 7, "        end borrow;" ],
+    [ 8, "        return ExitSuccess();" ],
+    [ 9, "    end;" ]
+  ]
+}

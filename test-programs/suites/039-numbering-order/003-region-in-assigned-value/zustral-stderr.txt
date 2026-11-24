@@ -5,7 +5,7 @@
     { "type": "text", "content": "Expected a value of type " },
     { "type": "type", "content": "Static" },
     { "type": "text", "content": ", but got a value of type " },
-    { "type": "type", "content": "_tmp_region_2" },
+    { "type": "type", "content": "region of the borrow of t" },
     { "type": "text", "content": "." }
   ],
   "span": {

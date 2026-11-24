@@ -1,0 +1,1 @@
+Test that an anonymous borrow (`&limit`) and a reborrow (`&~limit`) of a variable named as an import nickname borrow the variable (found in the review of issue #178). Before, the reference the desugaring made was declared under the imported name (`c_tmp_ref1`) and used under the nickname (`limit_tmp_ref1`), and the error was ``I can't find a variable named `c_tmp_ref1`.``

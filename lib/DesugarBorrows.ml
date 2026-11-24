@@ -144,8 +144,8 @@ let wrap_stmt_with_borrows_at (span: span) (supply: Supply.t) (stmt: AstDB.astmt
     let (region, supply) = anonymous_region supply in
     (AstDB.ABorrow {
         span;
-        original = original_name acc_rec.original;
-        rename = original_name acc_rec.rename;
+        original = acc_rec.original;
+        rename = local_name acc_rec.rename;
         declared_reference = None;
         region;
         body = stmt;
