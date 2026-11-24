@@ -8,7 +8,8 @@ description: The Stral Software Factory。issue を1件ずつ、事前調査、�
 issue を1件ずつ直してマージし、次の issue へ進む。扱う issue がなくなるまで繰り返す。
 1つの issue に1つの PR を立てる。
 
-扱う issue は、引数に番号があればその issue だけ、なければ開いている issue のすべてである。
+扱う issue は、引数に番号があればその issue だけ、なければ1回目の手順1で開いていた issue のすべてである。
+途中で立てた issue は、この実行では扱わない。
 
 計画と実行は、pstack の poteto-mode で行う。始める前に、Skill ツールで `pstack:poteto-mode` を呼ぶ。
 手順3から6は、issue に合う poteto-mode の playbook（Bug fix、Feature、Refactoring など）に従って進め、その計画を `fix-plan.adoc` に書く。
@@ -23,18 +24,20 @@ docs/issues/<日付>/                     1回の実行。日付は TZ=Asia/Toky
 ```
 
 その日のディレクトリが既にあれば、それを使う。
-途中から再開するときは、JSON で `next` の issue について計画、ブランチ、PR のどこまで済んだかを見て、済んでいない最初の手順から続ける。
+途中から再開するときは、日付が変わっていても、いちばん新しい日付のディレクトリを使う。JSON で `next` の issue、または PR がまだマージされていない `done` の issue について、計画、ブランチ、PR のどこまで済んだかを見て、済んでいない最初の手順から続ける。
 
 ## 1つの issue の流れ
 
 ### 1. 事前調査の JSON を作る、または更新する
 
-1回目は作る。2回目からは、前の `next` を `done` にして PR の番号を書き、開いている issue を取り直して、次の issue に合わせて書き直す。
+1回目は作る。2回目からは、開いている issue を取り直して、次の issue に合わせて書き直す。
 
 ```bash
 gh api 'repos/seiei-sogen/zustral-beta/issues?state=open&per_page=100&page=1' \
   --jq '.[] | select(.pull_request | not) | [.number, .title] | @tsv'
 ```
+
+1ページが100件で埋まっていたら、`page` を増やして次のページも取る。
 
 ```json
 {
@@ -46,8 +49,7 @@ gh api 'repos/seiei-sogen/zustral-beta/issues?state=open&per_page=100&page=1' \
       "summary": "issue が求めていること",
       "depends_on": [],
       "status": "next",
-      "reason": "この status にした理由",
-      "pull_request": null
+      "reason": "この status にした理由"
     }
   ],
   "next_issue": {
@@ -61,18 +63,24 @@ gh api 'repos/seiei-sogen/zustral-beta/issues?state=open&per_page=100&page=1' \
 }
 ```
 
-- `status` は `next`、`queued`、`skipped`、`done` のどれかである。
-- 所有者の判断が要る issue と、1つの PR に収まらない issue は `skipped` にする。
+- `status` は `next`、`queued`、`skipped`、`done` のどれかである。`done` は PR を立てたことを表す。
+- 所有者の判断が要る issue と、1つの PR に収まらない issue は `skipped` にする。`skipped` の issue に依存する issue も `skipped` にする。
 - `next` は1件だけにする。依存される issue を先に、小さい issue を先にする。
 - 不具合の issue は、いまのコンパイラで再現してから `current_behavior` に書く。
 
-`queued` が1件もなければ、「終わるとき」へ進む。
+`next` にできる issue が1件もなければ（`next` も `queued` もなければ）、「終わるとき」へ進む。
 
 この手順は、扱う issue のすべてに `status` と `reason` があり、`next_issue` の各項目が読んだコードか実行したコマンドに基づいていれば終わりである。
 
 ### 2. 作業ブランチを用意する
 
 最新の `origin/master` から作る。名前は、セッションに指定されたブランチがあればそれ、なければ `issue-<番号>` にする。
+前の issue と同じ名前を使い回すこともあるので、作り直す形にする。
+
+```bash
+git fetch origin master
+git checkout -B <ブランチ> origin/master
+```
 
 ### 3. 計画を立てる
 
@@ -124,7 +132,8 @@ gh api repos/seiei-sogen/zustral-beta/issues -f title='…' -F body=@<本文の�
 
 ### 7. PR を立てる
 
-残りを日本語でコミットし、push して、PR を立てる。
+JSON の `next` を `done` にし、残りを日本語でコミットして push し、PR を立てる。
+`done` を PR の前のコミットに入れるのは、記録のためだけに CI をもう1周回さないためである。
 
 ```bash
 gh api repos/seiei-sogen/zustral-beta/pulls -f base=master -f head=<ブランチ> \
@@ -145,12 +154,12 @@ CI を待つ。クラウド環境では `subscribe_pr_activity` で PR を購読
 
 CI が落ちたら、原因を直して push し、PR の本文をいまの内容に合わせて更新する（`gh api -X PATCH repos/seiei-sogen/zustral-beta/pulls/<PR 番号> -F body=@<本文のファイル>`）。そしてまた待つ。
 
-push した最後のコミットの check run がすべて `success` になったら、squash でマージし、作業ブランチをリモートから消す。クラウド環境では購読もやめる。
+push した最後のコミットの check run が1件以上あり、そのすべてが `completed` で `success` になったら、squash でマージし、作業ブランチをリモートから消す。クラウド環境では購読もやめる。
 
 ```bash
 gh api repos/seiei-sogen/zustral-beta/commits/<SHA>/check-runs \
   --jq '.check_runs[] | [.name, .status, .conclusion] | @tsv'
-gh api -X PUT repos/seiei-sogen/zustral-beta/pulls/<PR 番号>/merge -f merge_method=squash
+gh api -X PUT repos/seiei-sogen/zustral-beta/pulls/<PR 番号>/merge -f merge_method=squash -f sha=<SHA>
 gh api -X DELETE repos/seiei-sogen/zustral-beta/git/refs/heads/<ブランチ>
 ```
 
@@ -158,7 +167,7 @@ gh api -X DELETE repos/seiei-sogen/zustral-beta/git/refs/heads/<ブランチ>
 
 ## 終わるとき
 
-`queued` がなくなったら終わる。原因の分からないまま CI が落ち続けるときも、そこで止める。
+`next` にできる issue がなくなったら終わる。原因の分からないまま CI が落ち続けるときも、そこで止める。
 最後に次を報告する。
 
 - マージした PR と、閉じた issue。
