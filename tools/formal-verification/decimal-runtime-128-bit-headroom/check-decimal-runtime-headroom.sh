@@ -77,7 +77,8 @@ for harness in "${HARNESSES[@]}"; do
   if grep -q '^FAILED' "$work/$harness.status"; then
     failed=$((failed + 1))
     failed_properties "$work/$harness.log"
-    grep -E '^(ERROR|error)|loop header|not found' "$work/$harness.log" | head -5 | sed 's/^/    /'
+    # No failed property: CBMC or a step before it stopped. Show how it ended.
+    grep -qE 'FAILURE$' "$work/$harness.log" || tail -n 5 "$work/$harness.log" | sed 's/^/    /'
   fi
 done
 

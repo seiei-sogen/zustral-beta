@@ -2,9 +2,11 @@
 
     inject-long-division-loop-invariant.py <decimal.c> > <copy of decimal.c>
 
-The invariants are annotations: they do not change what the code computes,
-and each goes on its loop's header line, so line numbers in CBMC's reports are
-those of decimal.c. CBMC
+The invariants are annotations: they do not change what the code computes.
+Each goes on a line of its own: on the loop's header line, CBMC 5.76's loop
+contracts fail to find the end of zd_format's do-while loop. So lines after
+the digit loop's header are 2 lines (4 after the inner loop's) below their
+line in decimal.c. CBMC
 checks that each holds on entry and after one arbitrary iteration, so the check
 covers every number of digits k, not just the ones it could unroll. The digit
 loop must be found exactly once: if it is not, zd_div has changed, and the
@@ -20,15 +22,17 @@ TEN_TO_THE_38 = "((zd_u128)10000000000000000000ULL * 10000000000000000000ULL)"
 DIGIT_LOOP, INNER_LOOP = [
     # The digit loop: q stays below 10^38 because each step runs only when q < 10^37.
     ("    for (int i = 0; i < k; i++) {\n",
-     "    for (int i = 0; i < k; i++)"
-     f" __CPROVER_loop_invariant(0 <= i && i <= k && r < nb && q < {TEN_TO_THE_38}) {{\n"),
+     "    for (int i = 0; i < k; i++)\n"
+     f"      __CPROVER_loop_invariant(0 <= i && i <= k && r < nb && q < {TEN_TO_THE_38})\n"
+     "    {\n"),
     # Adding r ten times: the running sum stays below the divisor after each step,
     # and since r < nb, fewer than j of the j additions can reach the divisor, so the
     # digit ends below 10.
     ("      for (int j = 0; j < 10; j++) {\n",
-     "      for (int j = 0; j < 10; j++)"
-     " __CPROVER_loop_invariant((j == 0 && acc == 0 && digit == 0)"
-     " || (1 <= j && j <= 10 && acc < nb && digit < (unsigned)j)) {\n"),
+     "      for (int j = 0; j < 10; j++)\n"
+     "        __CPROVER_loop_invariant((j == 0 && acc == 0 && digit == 0)"
+     " || (1 <= j && j <= 10 && acc < nb && digit < (unsigned)j))\n"
+     "      {\n"),
 ]
 
 
