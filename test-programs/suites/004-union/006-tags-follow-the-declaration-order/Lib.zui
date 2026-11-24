@@ -1,0 +1,15 @@
+module Lib is
+    union Direction: Free is
+        case North;
+        case East;
+        case South;
+        case West;
+    end;
+
+    type Shape: Free;
+
+    function makeSquare(): Shape;
+    function makeTriangle(): Shape;
+    function makeCircle(): Shape;
+    function shapeTag(shape: Shape): Int32;
+end module.

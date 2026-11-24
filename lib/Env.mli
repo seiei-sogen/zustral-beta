@@ -140,7 +140,7 @@ val module_instances: env -> mod_id -> instance_decl list
 (** Return the public typeclass instances defined in a module. *)
 val module_public_instances: env -> mod_id -> instance_decl list
 
-(** Return the list of cases of a union. *)
+(** Return the cases of a union, in the order they are declared in. *)
 val get_union_cases : env -> union_id -> union_case_decl list
 
 (** Get method from the instance ID and the name of a method of its typeclass. *)

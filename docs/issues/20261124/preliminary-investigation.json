@@ -1,5 +1,5 @@
 {
-  "base_commit": "aa0783e3fde52c3e1df550b621666f17590415fd",
+  "base_commit": "d8c504b6ee3ad7c8710b56909552eaae38a4f8c9",
   "issues": [
     {
       "number": 33,
@@ -154,8 +154,8 @@
       "title": "union の C のタグが、宣言の逆順に並ぶ",
       "summary": "union の C のタグを、宣言の順に並べる。",
       "depends_on": [],
-      "status": "queued",
-      "reason": "README の「次にやること」の4番。リテラルと型の流れの残り。"
+      "status": "done",
+      "reason": "PR を立てた。union の C のタグが宣言の順になることを、コンパイラの性質として保証すると判断した。計画は issue-39/fix-plan.adoc。"
     },
     {
       "number": 68,
@@ -512,28 +512,27 @@
     }
   ],
   "next_issue": {
-    "number": 172,
-    "current_behavior": "4つの場合を、直す前のコンパイラ（d69429bd）で実行して確かめた。(1) 先頭に空行が3つあるファイルの 6 行目のエラーが、3 行目と出る。(2) 閉じていない文字列のエラーが「3 行目、98 桁」と出る（032-other-errors/019）。(3) 組み込みのモジュールの中の位置が、ファイル名が空で、行が1つ大きい（cli/052）。(4) 本体の関数の定義の位置が、前のトークンの末尾（1 行目、19 桁）から始まる（031/081）。",
+    "number": 39,
+    "current_behavior": "`union Color: Free is case Red; case Green; case Blue; end;` から生成する C のタグの列挙が、`mono_14_tag_Blue, mono_14_tag_Green, mono_14_tag_Red` と、宣言の逆順に並ぶ（直す前のコンパイラで、サブエージェントが実行して確かめた）。実行するプログラムからタグを読むと、3つの case の union で 210 になる。",
     "related_code": [
-      "cli/Os.ml: read_stream_to_string",
-      "lib/Lexer.mll: read_string",
-      "concat_builtins.py と lib/Compiler.ml（組み込みのモジュールのソース）",
-      "lib/Parser.mly: function_def, instance_def",
-      "cli/CliEngine.ml: try_adding_source_ctx"
+      "lib/Env.ml: get_union_cases（宣言を新しい順に持つ表を、そのまま返す）",
+      "lib/Monomorphize.ml",
+      "lib/TypingPass.ml: get_union_type_definition, group_cases_whens",
+      "lib/ExtractionPass.ml: region_held_by_value"
     ],
     "related_tests": [
-      "test-programs/suites/032-other-errors/019 と 020",
-      "test-programs/cli/052-entrypoint-in-the-built-in-module",
-      "test-programs/suites/031-declaration-errors/081",
-      "test-programs/suites/012-numbers（先頭が空行の 144 件）"
+      "test-programs/suites/004-union",
+      "test-programs/suites/006-linearity/020, 022, 023, 024",
+      "test-programs/suites/032-other-errors/021",
+      "test-programs/suites/036-type-checker-paths/054"
     ],
     "affected_ci_checks": [
-      "期待する出力の位置が変わるテストが 300 件あまりある",
       "tools/refactoring/measure.sh の記録",
-      "tools/refactoring/coverage.sh"
+      "base ブランチとの等価性（union を使うプログラムの C が、わざと変わる）"
     ],
     "risks": [
-      "期待する出力を、まとめて書き換える。書き換えた 308 件のすべてを、スクリプトで、意図した種類の変化かどうか仕分けた。"
+      "case の枝を調べる順が、宣言の順になる。枝どうしの線形性のエラーの文面で、どちらの枝を先に言うかが変わる。",
+      "古い逆順のタグの番号を決め打ちした、リポジトリの外の C があれば、壊れる。リポジトリの中にはない。"
     ]
   }
 }

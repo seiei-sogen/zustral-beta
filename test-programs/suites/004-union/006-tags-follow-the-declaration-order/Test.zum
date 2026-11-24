@@ -1,0 +1,94 @@
+pragma Unsafe_Module;
+
+import Lib (
+    Direction,
+    North,
+    East,
+    South,
+    West,
+    makeSquare,
+    makeTriangle,
+    makeCircle,
+    shapeTag
+);
+
+module body Test is
+    union Single: Free is
+        case Only;
+    end;
+
+    union Color: Free is
+        case Red;
+        case Green;
+        case Blue;
+    end;
+
+    union Choice[T: Free]: Free is
+        case First is
+            value: T;
+        case Second;
+        case Third is
+            value: T;
+    end;
+
+    function singleTag(single: Single): Int32 is
+        return @embed(Int32, "(int32_t)($1.tag)", single);
+    end;
+
+    function colorTag(color: Color): Int32 is
+        return @embed(Int32, "(int32_t)($1.tag)", color);
+    end;
+
+    function directionTag(direction: Direction): Int32 is
+        return @embed(Int32, "(int32_t)($1.tag)", direction);
+    end;
+
+    function int32ChoiceTag(choice: Choice[Int32]): Int32 is
+        return @embed(Int32, "(int32_t)($1.tag)", choice);
+    end;
+
+    function boolChoiceTag(choice: Choice[Bool]): Int32 is
+        return @embed(Int32, "(int32_t)($1.tag)", choice);
+    end;
+
+    function int32OptionTag(option: Option[Int32]): Int32 is
+        return @embed(Int32, "(int32_t)($1.tag)", option);
+    end;
+
+    function float64OptionTag(option: Option[Float64]): Int32 is
+        return @embed(Int32, "(int32_t)($1.tag)", option);
+    end;
+
+    function main(): ExitCode is
+        print("Single: ");
+        printLn(singleTag(Only()));
+        print("Color: ");
+        print(colorTag(Red()));
+        print(colorTag(Green()));
+        printLn(colorTag(Blue()));
+        print("Direction: ");
+        print(directionTag(North()));
+        print(directionTag(East()));
+        print(directionTag(South()));
+        printLn(directionTag(West()));
+        print("Shape: ");
+        print(shapeTag(makeSquare()));
+        print(shapeTag(makeTriangle()));
+        printLn(shapeTag(makeCircle()));
+        print("Choice[Int32]: ");
+        print(int32ChoiceTag(First(value => 7)));
+        print(int32ChoiceTag((Second() : Choice[Int32])));
+        printLn(int32ChoiceTag(Third(value => 7)));
+        print("Choice[Bool]: ");
+        print(boolChoiceTag(First(value => true)));
+        print(boolChoiceTag((Second() : Choice[Bool])));
+        printLn(boolChoiceTag(Third(value => true)));
+        print("Option[Int32]: ");
+        print(int32OptionTag((None() : Option[Int32])));
+        printLn(int32OptionTag(Some(value => 7)));
+        print("Option[Float64]: ");
+        print(float64OptionTag((None() : Option[Float64])));
+        printLn(float64OptionTag(Some(value => 7.0)));
+        return ExitSuccess();
+    end;
+end module body.

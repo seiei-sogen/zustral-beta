@@ -1,0 +1,1 @@
+Pins which error is reported when two branches of a `case` have one: the branch of the case the union declares first, wherever the statement puts it (lib/TypingPass.ml, augment_case). The statement writes the branch of `Second` before the branch of `First`, and the error is the one in the branch of `First`. Before issue #39, it was the branch of the case the union declares last.

@@ -1,0 +1,34 @@
+{
+  "module": "Test",
+  "kind": "Declaration Error",
+  "text": [
+    { "type": "text", "content": "The type parameter " },
+    { "type": "code", "content": "S" },
+    {
+      "type": "text",
+      "content": " is used as a type, but it is declared in the "
+    },
+    { "type": "code", "content": "Region" },
+    {
+      "type": "text",
+      "content": " universe, and regions are not types. A region can only be the region of a reference or of a span."
+    }
+  ],
+  "span": {
+    "filename": "test-programs/suites/040-region-as-value-type/038-union-slots-of-two-regions-in-instance-method-names-the-region-of-the-first-case/Test.zum",
+    "startp": { "line": 14, "column": 4 },
+    "end": { "line": 19, "column": 8 }
+  },
+  "context": [
+    [ 12, "    end;" ],
+    [ 13, "" ],
+    [ 14, "    instance Shape(Int32) is" ],
+    [ 15, "        generic [R: Region, S: Region]" ],
+    [ 16, "        method area(x: Int32, y: Choice[S, R]): Int32 is" ],
+    [ 17, "            return x;" ],
+    [ 18, "        end;" ],
+    [ 19, "    end;" ],
+    [ 20, "" ],
+    [ 21, "    function main(): ExitCode is" ]
+  ]
+}

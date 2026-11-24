@@ -1,0 +1,8 @@
+Single: 0
+Color: 012
+Direction: 0123
+Shape: 012
+Choice[Int32]: 012
+Choice[Bool]: 012
+Option[Int32]: 01
+Option[Float64]: 01

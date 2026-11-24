@@ -7,10 +7,10 @@ module body Test is
     function main(): ExitCode is
         let c: Choice := First();
         case c of
-            when First do
-                printLn(inFirst);
             when Second do
                 printLn(inSecond);
+            when First do
+                printLn(inFirst);
         end case;
         return ExitSuccess();
     end;

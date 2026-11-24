@@ -5,18 +5,18 @@
     { "type": "text", "content": "I can't find a " },
     { "type": "text", "content": "variable" },
     { "type": "text", "content": " named " },
-    { "type": "code", "content": "inSecond" },
+    { "type": "code", "content": "inFirst" },
     { "type": "text", "content": "." }
   ],
   "span": {
-    "filename": "test-programs/suites/036-type-checker-paths/054-case-branches-checked-last-declared-first/Test.zum",
+    "filename": "test-programs/suites/036-type-checker-paths/054-case-branches-checked-in-declaration-order/Test.zum",
     "startp": { "line": 13, "column": 16 },
-    "end": { "line": 13, "column": 34 }
+    "end": { "line": 13, "column": 33 }
   },
   "context": [
-    [ 11, "                printLn(inFirst);" ],
-    [ 12, "            when Second do" ],
-    [ 13, "                printLn(inSecond);" ],
+    [ 11, "                printLn(inSecond);" ],
+    [ 12, "            when First do" ],
+    [ 13, "                printLn(inFirst);" ],
     [ 14, "        end case;" ],
     [ 15, "        return ExitSuccess();" ]
   ]
