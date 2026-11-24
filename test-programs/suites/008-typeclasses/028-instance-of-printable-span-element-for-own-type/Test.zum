@@ -1,0 +1,53 @@
+pragma Unsafe_Module;
+
+import Zustral.Memory (
+    Pointer,
+    Address,
+    allocateBuffer,
+    nullCheck,
+    deallocate,
+    span
+);
+
+module body Test is
+    record Letter: Free is
+        code: Nat8;
+    end;
+
+    instance PrintableSpanElement(Letter) is
+        generic [R: Region]
+        method printSpan(value: Span[Letter, R]): Unit is
+            print("letters: ");
+            print(spanLength(value));
+            return nil;
+        end;
+    end;
+
+    generic [T: Free(PrintableSpanElement), R: Region]
+    function printLineOfElements(elements: Span[T, R]): Unit is
+        printLn(elements);
+        return nil;
+    end;
+
+    function allocateLettersOrDie(): Pointer[Letter] is
+        let addr: Address[Letter] := allocateBuffer(3);
+        case nullCheck(addr) of
+            when Some(value: Pointer[Letter]) do
+                return value;
+            when None do
+                abort("Allocation failed.");
+        end case;
+    end;
+
+    function main(): ExitCode is
+        printLineOfElements("text");
+        var letters: Pointer[Letter] := allocateLettersOrDie();
+        borrow ref: &[Pointer[Letter], R] := &letters do
+            let lettersSpan: Span[Letter, R] := span(ref, 0, 2);
+            printLn(lettersSpan);
+            printLineOfElements(lettersSpan);
+        end borrow;
+        deallocate(letters);
+        return ExitSuccess();
+    end;
+end module body.

@@ -897,11 +897,6 @@ module body Zustral.Pervasive is
             return @embed(Unit, "au_printf(\"nil\")");
             return value;
         end;
-
-        generic [R: Region]
-        method printSpan(array: Span[Unit, R]): Unit is
-            return nil;
-        end;
     end;
 
     instance Printable(Bool) is
@@ -913,11 +908,6 @@ module body Zustral.Pervasive is
             end if;
             return nil;
         end;
-
-        generic [R: Region]
-        method printSpan(array: Span[Bool, R]): Unit is
-            return nil;
-        end;
     end;
 
     instance Printable(Nat8) is
@@ -925,12 +915,14 @@ module body Zustral.Pervasive is
             return @embed(Unit, "au_printf(\"%i\", $1)", value);
             return nil;
         end;
+    end;
 
+    instance PrintableSpanElement(Nat8) is
         generic [R: Region]
-        method printSpan(array: Span[Nat8, R]): Unit is
-            if @embed(Index, "$1.size", array) > 0 then
-                for i from 0 to @embed(Index, "$1.size", array) - 1 do
-                    @embed(Unit, "au_printf(\"%c\", $1)", array[i]);
+        method printSpan(value: Span[Nat8, R]): Unit is
+            if @embed(Index, "$1.size", value) > 0 then
+                for i from 0 to @embed(Index, "$1.size", value) - 1 do
+                    @embed(Unit, "au_printf(\"%c\", $1)", value[i]);
                 end for;
             end if;
             return nil;
@@ -942,21 +934,11 @@ module body Zustral.Pervasive is
             return @embed(Unit, "au_printf(\"%i\", $1)", value);
             return nil;
         end;
-
-        generic [R: Region]
-        method printSpan(array: Span[Nat16, R]): Unit is
-            return nil;
-        end;
     end;
 
     instance Printable(Nat32) is
         method print(value: Nat32): Unit is
             return @embed(Unit, "au_printf(\"%u\", $1)", value);
-            return nil;
-        end;
-
-        generic [R: Region]
-        method printSpan(array: Span[Nat32, R]): Unit is
             return nil;
         end;
     end;
@@ -966,21 +948,11 @@ module body Zustral.Pervasive is
             return @embed(Unit, "au_printf(\"%zu\", $1)", value);
             return nil;
         end;
-
-        generic [R: Region]
-        method printSpan(array: Span[Nat64, R]): Unit is
-            return nil;
-        end;
     end;
 
     instance Printable(Int8) is
         method print(value: Int8): Unit is
             return @embed(Unit, "au_printf(\"%i\", $1)", value);
-            return nil;
-        end;
-
-        generic [R: Region]
-        method printSpan(array: Span[Int8, R]): Unit is
             return nil;
         end;
     end;
@@ -990,21 +962,11 @@ module body Zustral.Pervasive is
             return @embed(Unit, "au_printf(\"%i\", $1)", value);
             return nil;
         end;
-
-        generic [R: Region]
-        method printSpan(array: Span[Int16, R]): Unit is
-            return nil;
-        end;
     end;
 
     instance Printable(Int32) is
         method print(value: Int32): Unit is
             return @embed(Unit, "au_printf(\"%i\", $1)", value);
-            return nil;
-        end;
-
-        generic [R: Region]
-        method printSpan(array: Span[Int32, R]): Unit is
             return nil;
         end;
     end;
@@ -1014,21 +976,11 @@ module body Zustral.Pervasive is
             return @embed(Unit, "au_printf(\"%li\", $1)", value);
             return nil;
         end;
-
-        generic [R: Region]
-        method printSpan(array: Span[Int64, R]): Unit is
-            return nil;
-        end;
     end;
 
     instance Printable(Index) is
         method print(value: Index): Unit is
             return @embed(Unit, "au_printf(\"%zu\", $1)", value);
-            return nil;
-        end;
-
-        generic [R: Region]
-        method printSpan(array: Span[Index, R]): Unit is
             return nil;
         end;
     end;
@@ -1038,21 +990,11 @@ module body Zustral.Pervasive is
             return @embed(Unit, "au_printf(\"%zu\", $1)", value);
             return nil;
         end;
-
-        generic [R: Region]
-        method printSpan(array: Span[ByteSize, R]): Unit is
-            return nil;
-        end;
     end;
 
     instance Printable(Float32) is
         method print(value: Float32): Unit is
             return @embed(Unit, "au_printf(\"%f\", $1)", value);
-            return nil;
-        end;
-
-        generic [R: Region]
-        method printSpan(array: Span[Float32, R]): Unit is
             return nil;
         end;
     end;
@@ -1062,22 +1004,12 @@ module body Zustral.Pervasive is
             return @embed(Unit, "au_printf(\"%f\", $1)", value);
             return nil;
         end;
-
-        generic [R: Region]
-        method printSpan(array: Span[Float64, R]): Unit is
-            return nil;
-        end;
     end;
 
-    generic [B: Free(Printable), R: Region]
+    generic [B: Free(PrintableSpanElement), R: Region]
     instance Printable(Span[B, R]) is
         method print(value: Span[B, R]): Unit is
             return printSpan(value);
-        end;
-
-        generic [S: Region]
-        method printSpan(array: Span[Span[B, R], S]): Unit is
-            return nil;
         end;
     end;
 

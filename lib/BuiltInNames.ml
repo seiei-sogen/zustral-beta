@@ -145,6 +145,8 @@ let pervasive_import_names: string list = [
     "bitwiseNot";
     "Printable";
     "print";
+    "PrintableSpanElement";
+    "printSpan";
     "printLn";
     "argumentCount";
     "nthArgument";

@@ -323,6 +323,7 @@ Decimal の仕様の3節と4節が、今の言語の上に載るための前提�
 - **推奨。** `printSpan` を `Printable` から外す。
 - **大きさ。** 小。
 - **Decimal との関係。** 11.2節の `Printable` のインスタンスの中身が、これで決まる。D2 の前に決める。
+- **結果。** 終わった。`printSpan` を `Printable` から外し、型クラス `PrintableSpanElement` に移した。そのインスタンスを持つのは `Nat8` だけである。`Printable(Span[B, R])` は、`B` に `PrintableSpanElement` を求める。`Nat8` でない要素のスパンの `print` は、型エラーになる。インスタンスの形の規則は、変えていない。Decimal の `Printable` のインスタンスは、`print` だけを持てばよい。
 
 ### C8. インスタンスを、宣言の時点で検査する（issue #72、#91、#122）
 

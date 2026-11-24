@@ -1,0 +1,97 @@
+= issue #60 の修正計画: `printSpan` を `Printable` から外す
+
+== 目的
+
+issue #60 は、`Printable` の `printSpan` が、`Nat8` のほかの型では何も出力しないことを報告している。
+`Span[Int32, R]` を `print` しても、エラーにならず、何も出ない。
+issue は、`printSpan` を `Printable` から外すことを推している。
+PR #170 は、外すには言語の判断が要ると分かって、直さなかった。インスタンスの形の規則を緩めるか、`Nat8` だけが実装する型クラスを足すかである。
+
+終わりの条件は、`print` が、出力できないスパンを黙って受けないことである。
+
+== 判断
+
+*`Nat8` だけが実装する型クラスを足す。インスタンスの形の規則は、緩めない。*
+
+* 規則を緩める案は、`instance Printable(Span[Nat8, R])` のように、型変数と具体的な型が混ざった引数を許す。インスタンスの重なりの検査と、インスタンスの探し方が、この規則に頼っている。型クラスの中心の規則を、出力の都合1つのために変えることになる。
+* 型クラスを足す案は、型検査の規則を変えない。組み込みのモジュール `Pervasive` と、既定で取り込む名前の表の変更だけで済む。
+* 利用者が、自分の文字の型にインスタンスを書けば、その型のスパンも `print` できる。`PrintableSpanElement` と `printSpan` は、`Printable` と同じく、どのモジュールにも既定で取り込まれる。
+
+所有者の代わりに選んだ既定である。違う判断にするときは、この PR を取り消して、issue を開き直す。
+
+== 現状
+
+`origin/master` で確かめた。
+
+[source]
+----
+generic [R: Region]
+function show(numbers: Span[Int32, R]): Unit is
+    print(numbers);
+    return nil;
+end;
+----
+
+このプログラムは、`zustral compile … --target-type=c` が終了コード 0 で終わる。`print(numbers)` は、`Printable(Span[B, R])` を通って `Int32` の `printSpan` を呼び、何も出力しない。
+
+関係するコードとテストは次のとおりである。
+
+* `lib/builtin/Pervasive.zui` と `lib/builtin/Pervasive.zum`: `Printable` に `print` と `printSpan` がある。14 個の型のインスタンスのうち、`printSpan` に中身があるのは `Nat8` だけである。`Printable(Span[B, R])` の `printSpan`（スパンのスパン）も、何もしない。
+* `test-programs/suites/008-typeclasses/022-orphan-instance-for-built-in-type`: `Printable(Int32)` のインスタンスを書くプログラムで、`printSpan` を持つ。
+* `docs/decimal.md` の 11.2 節: Decimal の `printSpan` は、この issue の結論に合わせる、とある。
+* `docs/plan.md` の C7。
+
+コンパイラの OCaml のコードは、`printSpan` を名指ししていない（`grep -rn printSpan lib/*.ml` が 0 件）。`Printable`、`print`、`printLn` は、既定で取り込む名前の表（`lib/BuiltInNames.ml` の `pervasive_import_names`）にある。
+
+== 変更
+
+* `lib/builtin/Pervasive.zui`、`lib/builtin/Pervasive.zum`
+** `Printable` から `printSpan` を消す。13 個の型のインスタンスと、`Printable(Span[B, R])` から、何もしない `printSpan` を消す。
+** 型クラス `PrintableSpanElement(A: Free)` を足す。メソッドは `printSpan` である。名前は、「スパンとして出力できる要素」を表す。
+** `instance PrintableSpanElement(Nat8)` に、`Nat8` の `printSpan` を移す。
+** `Printable(Span[B, R])` の制約を、`B: Free(PrintableSpanElement)` にする。
+* `test-programs/suites/008-typeclasses/022-orphan-instance-for-built-in-type`: `printSpan` を消す。期待する出力の、ソースの行を取り直す。
+* `docs/decimal.md` の 11.2 節と、`docs/plan.md` の C7 に、結論を書く。
+
+新しいファイルは、テストだけである。
+
+== テスト
+
+最初に書く、失敗するテスト: `test-programs/suites/030-type-errors/124-print-of-a-span-of-integers`。
+上の `show` が、`print(numbers)` の位置で型エラーになる。直す前は、コンパイルが通る。
+
+文字列（`Span[Nat8, Static]`）の `print` が変わらないことは、既にあるスイートと例が確かめる。
+
+利用者のインスタンスが使えることは、`test-programs/suites/008-typeclasses/028-instance-of-printable-span-element-for-own-type` が確かめる。
+
+== 確認
+
+* 計測値: `lib/BuiltInNames.ml` に2行足す（既定で取り込む名前）。`measure.sh --record` で記録し直す。
+* エラーメッセージのテスト: 文面は増えない。インスタンスが見つからないエラーを使う。
+* カバレッジ: OCaml の行は増えない。
+
+== 範囲外
+
+* 数値のスパンを、要素を区切って出力すること（issue の1つ目の案）。区切りの文字と書式を決める必要があり、I/O ライブラリの設計は本実装で行う。
+* Decimal の `Printable` のインスタンス（D2、issue #74）。
+
+== セルフレビュー
+
+issue の本文に照らして見直した。
+
+* 「`printSpan` を `Printable` から外し、文字列の出力は `Span[Nat8, R]` のインスタンスだけが持つ」: `Span[B, R]` のインスタンスは残り、`B` が `PrintableSpanElement` を持つときだけ使える。持つのは `Nat8` だけなので、issue の求めと同じ結果になる。
+* 「Decimal との関係」: `docs/decimal.md` の 11.2 節を、結論に合わせて書き直す。
+* 呼び出し元: `printSpan` を呼ぶのは、`Printable(Span[B, R])` の `print` だけである。標準ライブラリ、例、テストに、`printSpan` を直に呼ぶプログラムはない（`grep -rn printSpan` で確かめた）。
+* 見直しで足したこと: テスト `008/022` が `printSpan` を持っていた。変更の節に足した。
+
+== 実装の記録
+
+* `tools/refactoring/run-every-ci-check-locally.sh` の 14 個の検査は、すべて `ok` だった。
+* 新しいテストのプログラムは、4 行目の `print(numbers)` で「The typeclass `Printable` has no instance which matches for `Span[Int32, R]`」になる（終了コード 255）。
+
+== コードレビューで直したこと
+
+* `PrintableSpanElement(Nat8)` の `printSpan` の引数の名前を、型クラスの宣言と同じ `value` にした。前は `array` で、名前付きの引数で呼ぶときの名前（`value`）と違っていた。
+* 利用者のインスタンスのテスト `008-typeclasses/028-instance-of-printable-span-element-for-own-type` を足した。
+* `docs/check-plan.py` の `FIXED` に 60 を足した。C7 を「終わった」としたので、issue が閉じた後も、計画が #60 を挙げていてよい。
+* `PrintableSpanElement` と `printSpan` を、既定で取り込む名前（`lib/BuiltInNames.ml` の `pervasive_import_names`）に足した。足す前は、利用者がこの型クラスを制約に書くと、「no typeclass with that name is declared or imported」になった。汎用の関数が要素の型のスパンを `print` するには、この制約が要る。計測値を記録し直した。

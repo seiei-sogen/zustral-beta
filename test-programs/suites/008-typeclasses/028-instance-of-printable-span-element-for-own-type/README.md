@@ -1,0 +1,1 @@
+Test that a module can give its own type an instance of `PrintableSpanElement`, and that `print` of a span of that type then calls the instance (issue #60). The built-in instance `Printable(Span[B, R])` finds the instance of the element type in the user's module. `PrintableSpanElement` is imported by default, as `Printable` is: the module does not import it by name.
