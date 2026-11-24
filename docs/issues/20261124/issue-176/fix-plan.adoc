@@ -1,0 +1,99 @@
+= issue #176 の修正計画: 型引数が大きくなり続ける汎用の宣言で、コンパイルを止める
+
+== 目的
+
+issue #176 は、汎用の関数が、自分の型引数を包んだ型（`Option[T]`）で自分を呼ぶと、コンパイルが終わらないことを報告している。
+issue は、単相化で上限を置くか、型検査で断るかの判断を求めている。
+
+終わりの条件は、issue の再現のプログラムと、同じ原因の形のすべてで、コンパイラが止まらずに、原因の宣言を名指しするエラーを出すことである。
+
+== 判断
+
+*単相化の段で止める。系譜の上で、同じ汎用の宣言が、それまでのどの具体化よりも型引数の入れ子が深い具体化を登録することが 8 回あったら、エラーにする。*
+
+* 単相化は、具体化（monomorph）を作るたびに、その本体が使う具体化を登録する。登録した側から登録された側へたどる列を、具体化の「系譜」と呼ぶ。終わらないプログラムでは、系譜の上に同じ宣言が、入れ子の深くなる型引数で、いつまでも現れる。
+* 型検査で断る案は、採らない。互いを呼ぶ関数、インスタンスのメソッド、型のスロットを通る場合まで見つけるには、呼び出しのグラフの解析が要る。系譜なら、どの形でも同じ仕組みで見つかる。
+* 「深くなる」ことを条件にするのは、終わるプログラムを断らないためである。入れ子の型のインスタンスは、内側の型のインスタンスを使う（`Printable(Span[Span[Nat8, R], R])` は `Printable(Span[Nat8, R])` を使う）。このとき、同じ宣言が系譜に何度も現れるが、型引数は浅くなる。
+* 入れ子が前と同じ深さの具体化は、数えないが、連続も切らない。型引数を入れ替えながら片方を包む宣言（`f[A, B]` が `f[B, Option[A]]` を使う）は、最も深い型引数が1回おきにしか深くならないからである。連続を切るのは、前より浅い具体化だけである。
+* 8 回という数は、次の2つから決めた。
+** 終わるプログラムが、同じ宣言を深くなる型引数で使うのは、深い型のために書いた別のインスタンスを通るときだけである。それが 8 回あるプログラムは、考えにくい。
+** 待つ回数は、小さくなければならない。自分を2回使う宣言は、具体化の数が1回ごとに2倍になる。型引数に `Pair[T, T]` を渡す宣言は、型の大きさが1回ごとに2倍になる。8 回なら、どちらも 256 倍で止まる。
+
+所有者の代わりに選んだ既定である。違う判断にするときは、この PR を取り消して、issue を開き直す。
+
+=== 採らなかった案: 周回の数の上限
+
+最初の実装は、単相化の周回（前の周が登録した具体化を作る1回り）の数に、128 の上限を置いた。
+コードレビューが、これでは止まらない形を2つ見つけた（下の 4 と 5）。周回の数が上限に届く前に、仕事の量が指数で増えるからである。
+ほかに、終わるプログラムでも、汎用の関数が 129 段つながっていると断られた。
+周回の数は、原因（型引数が深くなり続けること）を測っていなかった。そこで、原因そのものを数える、いまの形に作り直した。
+
+== 現状
+
+`origin/master`（`3d2905f`）で確かめた。次の形で、`timeout 20 zustral compile …` が終了コード 124 で打ち切られる。
+
+. 汎用の関数が、`Option[T]` で自分を呼ぶ（issue の再現）。
+. 汎用のインスタンスのメソッドが、`Box[Box[U]]` で自分を呼ぶ。
+. 汎用のレコードや union が、`Pointer[Chain[Option[T]]]` のスロットを持つ。関数は汎用でない。
+. 汎用の関数が、`Option[T]` と `Box[T]` で、自分を2回呼ぶ。
+. 汎用の関数が、`Pair[T, T]` で自分を呼ぶ。
+. 汎用の関数が、型引数を入れ替えて、`B` と `Option[A]` で自分を呼ぶ。コードレビューが見つけた。同じ深さの具体化で連続を切っていた間は、止まらなかった。
+
+関係するコードは、`lib/Monomorphize.ml` の `instantiate_monomorphs_until_exhausted` である。作っていない具体化がなくなるまで、自分を呼び続ける。
+
+== 変更
+
+* `lib/GenericDeclarationCopiedByMonomorph.ml`（新しいファイル）: 具体化を、「汎用の宣言の、ある型引数での写し」として見る。宣言の種類（レコード、union、関数、インスタンスのメソッド）を1つの型 `generic_declaration` にまとめる。
+* `lib/NameOfGenericDeclaration.ml`（新しいファイル）: `name_of_generic_declaration`。エラーに出す、宣言の名前を返す。
+* `lib/NestingOfMonoTypeArguments.ml`（新しいファイル）: `nesting_of_mono_type_arguments`。型引数の入れ子の深さを返す。`Int32` は 0、`Option[Int32]` は 1 である。
+* `lib/LineageOfMonomorph.ml`（新しいファイル）: 系譜の型と、`lineages_with_monomorphs_registered_by`。具体化を作った後に、それが登録した具体化のそれぞれに系譜を与える。同じ宣言の具体化が、それまでのどれよりも深くなることが 8 回あったら、エラーにする。同じ深さや、浅い具体化は、数えない。数え直しもしない。
+* `lib/Env.ml`: `get_id_of_last_registered_monomorph` と `get_monomorphs_registered_after`。具体化を1つ作る前と後を比べて、その間に登録された具体化を取り出す。ID は登録の順に増えるので、表を ID で分ければ済む。
+* `lib/Monomorphize.ml`: `instantiate_monomorphs` が、具体化を1つ作るたびに、系譜を更新する。
+* `lib/GenericErrors.ml`: `GenericDeclarationUsesItselfWithDeeperTypeArguments { declaration; times_in_a_row }` と、その文面を足す。単相化の段は式の位置を持たないので、エラーに位置はない。代わりに、宣言の名前を出す。
+
+== テスト
+
+最初に書く、失敗するテスト。直す前は、どれも打ち切られる。`test-programs/suites/034-early-and-late-stage-errors` に置く。番号は、上の「現状」の形の順である。
+
+* `037-generic-function-calls-itself-with-a-growing-type-argument`: issue の再現。エラーは `grow` を名指しする。
+* `038-generic-instance-method-calls-itself-with-a-growing-type-argument`: `nest` を名指しする。
+* `039-generic-record-holds-itself-with-a-growing-type-argument`: `Chain` を名指しする。
+* `042-generic-union-holds-itself-with-a-growing-type-argument`: 039 の union の版。
+* `040-generic-function-calls-itself-twice-with-growing-type-arguments`
+* `041-generic-function-calls-itself-with-a-type-argument-that-doubles`
+* `043-generic-function-calls-itself-with-swapped-type-arguments-one-of-which-grows`
+
+終わるプログラムを断らないことは、既にあるスイートと標準ライブラリが確かめる。
+浅くなる型引数で自分を使う宣言を数えないことは、`038-late-stage-paths/042-generic-instance-method-uses-itself-with-a-shallower-type-argument` が確かめる。9 重の `Box` で、`Box[U]` のインスタンスのメソッドが `U` で自分を呼ぶ。
+
+== 確認
+
+* 計測値: `lib/` にファイルが4つ増える。`measure.sh --record` で記録し直す。
+* エラーメッセージのテスト: 新しい文面を、上の7つのテストが固定する。
+* カバレッジ: 宣言の名前を返す関数の4つの枝を、037（関数）、038（メソッド）、039（レコード）、042（union）が実行する。深さを比べる3つの枝（深い、同じ、浅い）は、037、043、`038-late-stage-paths/042` が実行する。
+
+== 範囲外
+
+* エラーに位置を付けること。単相化の段に、式の位置を運ぶ必要がある。
+
+== セルフレビュー
+
+issue の本文に照らして見直した。
+
+* 「コンパイラが止まらずに、エラーを出す」: 5 つの形で確かめた。
+* 「上限を置くか、型検査で断るかを、決める」: 単相化の段で止める。理由は「判断」の節にある。
+* 呼び出し元: `instantiate_monomorphs_until_exhausted` を呼ぶのは、`Monomorphize.monomorphize`、`Monomorphize.monomorphize_wrappers`、`Entrypoint.entrypoint_code` の3か所である。どれも `Outcome.catch` の中にある。系譜は、呼び出しごとに空から始める。終わらない連鎖は、1回の呼び出しの中で起きるからである。
+* 見直しで足したこと: 型だけで終わらない形（3）を、再現して、テストに足した。issue は関数の場合だけを挙げている。
+
+== 実装の記録
+
+* 計画と違うことをした。最初は周回の数の上限で実装し、コードレビューの後で、系譜を数える形に作り直した。経緯は「採らなかった案」の節にある。
+* 作り直した後の2回目のコードレビューが、型引数を入れ替えながら片方を包む形（`f[A, B]` が `f[B, Option[A]]` を使う）で止まらないことを見つけた。深さが「前より深い」ときだけ数え、そうでなければ 0 に戻していたからである。数え方を、「それまでのどれよりも深い」ときに数え、0 には戻さない形に直した。深さが上下しながら増える形も、これで止まる。
+* `tools/refactoring/run-every-ci-check-locally.sh` の 14 個の検査は、すべて `ok` だった。
+* 5 つの形は、どれも 0.05 秒以内に、次の形のエラーになる（終了コード 255）。
++
+----
+The generic declaration `grow` keeps using itself with type arguments that nest deeper: `8` times, each deeper than every one before.
+
+The compiler makes a copy of a generic declaration for each list of type arguments it is used with. A generic function or type that uses itself with a type argument that grows at each use, such as `Option[T]` for its type parameter `T`, needs copies without end.
+----

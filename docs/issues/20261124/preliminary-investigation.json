@@ -1,5 +1,5 @@
 {
-  "base_commit": "1b5c48a521e70cba77e7f6e020200569ba66ad71",
+  "base_commit": "ca3c0e5c26be75d9582ad89b4ede17394a528342",
   "issues": [
     {
       "number": 33,
@@ -22,8 +22,8 @@
       "title": "自分を呼ぶたびに型引数が大きくなる汎用の関数で、コンパイルが終わらない",
       "summary": "型引数が大きくなり続ける汎用の関数で、コンパイルが終わらない。単相化の上限で止めるか、型検査で断るかを決める。",
       "depends_on": [],
-      "status": "queued",
-      "reason": "README の「次にやること」の2番。判断が要る issue。"
+      "status": "done",
+      "reason": "PR を立てた。単相化の段で、同じ宣言が深くなる型引数で 8 回続けて自分を使ったら止めると判断した。計画は issue-176/fix-plan.adoc。"
     },
     {
       "number": 60,
@@ -472,22 +472,23 @@
     }
   ],
   "next_issue": {
-    "number": 125,
-    "current_behavior": "汎用の関数 `same(a: T, b: T)` の中の `a = b` が型検査を通る。レコードの値で呼ぶと、`zustral compile TV.zum --entrypoint=TV:main --target-type=c --output=tv.c` は終了コード 0 で終わり、`cc -fwrapv tv.c -lm` が `error: invalid operands to binary == (have 'mono_14' {aka 'struct mono_14'} and ...)` で失敗する（3d2905f で実行して確かめた）。レコード、union、スパン、参照、領域の `=` は、もう型エラーになる（030-type-errors の 112、116、118 から 122）。",
+    "number": 176,
+    "current_behavior": "issue の再現のプログラム（汎用の関数 `grow` が `Option[T]` で自分を呼ぶ）で、`timeout 10 zustral compile G.zum --entrypoint=G:main --target-type=c --output=g.c` が終了コード 124 で打ち切られる（3d2905f で実行して確かめた）。同じく打ち切られる形が、ほかに4つある。汎用のインスタンスのメソッドが `Box[Box[U]]` で自分を呼ぶ形、汎用のレコードや union が `Pointer[Chain[Option[T]]]` のスロットを持つ形、汎用の関数が `Option[T]` と `Box[T]` で自分を2回呼ぶ形、汎用の関数が `Pair[T, T]` で自分を呼ぶ形である。",
     "related_code": [
-      "lib/TypeSystem.ml: is_comparable",
-      "lib/TypeCheckExpr.ml: augment_comparison"
+      "lib/Monomorphize.ml: instantiate_monomorphs_until_exhausted, instantiate_monomorphs",
+      "lib/Env.ml: 具体化の表（MonomorphsById）",
+      "lib/GenericErrors.ml: render"
     ],
     "related_tests": [
-      "test-programs/suites/036-type-checker-paths/061-values-of-comparable-types-compare",
-      "test-programs/suites/030-type-errors/112、116、118 から 122",
-      "standard/test/Buffer.zum: assertNth"
+      "test-programs/suites/034-early-and-late-stage-errors（単相化の段のエラーを置くスイート）"
     ],
     "affected_ci_checks": [
-      "tools/refactoring/measure.sh の記録（lib/TypeSystem.ml の行数）"
+      "tools/refactoring/measure.sh の記録（ファイルの数と行数）",
+      "エラーメッセージにテストがあること（新しい文面）",
+      "tools/refactoring/coverage.sh（宣言の名前を返す関数の4つの枝）"
     ],
     "risks": [
-      "型変数の値を比べていた利用者のプログラムが、通らなくなる。リポジトリの中では、テスト 036/061 と standard/test/Buffer.zum の2か所だけである（型変数を断るコンパイラで、スイート、標準ライブラリ、例を通して確かめた）。"
+      "終わるプログラムでも、同じ宣言が、深くなる型引数で 8 回続けて自分を使うと断られる。深い型のために別々に書いたインスタンスを 8 個たどる場合だけで、リポジトリのプログラムにはない（スイート、標準ライブラリ、例が通る）。"
     ]
   }
 }

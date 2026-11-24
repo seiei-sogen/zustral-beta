@@ -1,0 +1,1 @@
+Test that a generic function that calls itself with `B` and `Option[A]` for its type parameters `A` and `B` is an error that names the function (issue #176). The type arguments swap, so the deepest of them nests deeper only at every other call: a call that nests as deep as the one before must not end the count. Before, the compiler did not finish.

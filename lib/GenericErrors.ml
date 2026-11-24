@@ -47,6 +47,7 @@ type t =
   | AssignToNonMutableReference of ty
   | ReborrowOfNonMutableReference of ty
   | LeftoverArguments
+  | GenericDeclarationUsesItselfWithDeeperTypeArguments of { declaration: identifier; times_deepened: int }
 
 let render (error: t): err_text =
   match error with
@@ -178,4 +179,18 @@ let render (error: t): err_text =
   | LeftoverArguments ->
      [
        Text "There are leftover arguments."
+     ]
+  | GenericDeclarationUsesItselfWithDeeperTypeArguments { declaration; times_deepened } ->
+     [
+       Text "The generic declaration ";
+       Code (ident_string declaration);
+       Text " keeps using itself with type arguments that nest deeper: ";
+       Code (string_of_int times_deepened);
+       Text " times, each deeper than every one before.";
+       Break;
+       Text "The compiler makes a copy of a generic declaration for each list of type arguments it is used with. A generic function or type that uses itself with a type argument that grows at each use, such as ";
+       Code "Option[T]";
+       Text " for its type parameter ";
+       Code "T";
+       Text ", needs copies without end."
      ]

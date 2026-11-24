@@ -1,0 +1,28 @@
+{
+  "module": "Test",
+  "kind": "Generic Error",
+  "text": [
+    { "type": "text", "content": "The generic declaration " },
+    { "type": "code", "content": "grow" },
+    {
+      "type": "text",
+      "content": " keeps using itself with type arguments that nest deeper: "
+    },
+    { "type": "code", "content": "8" },
+    {
+      "type": "text",
+      "content": " times, each deeper than every one before."
+    },
+    { "type": "break" },
+    {
+      "type": "text",
+      "content": "The compiler makes a copy of a generic declaration for each list of type arguments it is used with. A generic function or type that uses itself with a type argument that grows at each use, such as "
+    },
+    { "type": "code", "content": "Option[T]" },
+    { "type": "text", "content": " for its type parameter " },
+    { "type": "code", "content": "T" },
+    { "type": "text", "content": ", needs copies without end." }
+  ],
+  "span": null,
+  "context": null
+}
