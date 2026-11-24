@@ -1,0 +1,1 @@
+Test that a variable of a Free type cannot be read in the statement that borrows it mutably (issue #179). `showCellThenNumber(x, bump(&!x))` reads `x` and passes a write reference to `x` in one call: the value the call gets would depend on the order of the arguments. Before, the read was accepted, and took the value from before `bump` ran.

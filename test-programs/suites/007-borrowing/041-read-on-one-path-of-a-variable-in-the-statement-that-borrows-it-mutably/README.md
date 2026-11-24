@@ -1,0 +1,1 @@
+Test that a variable of a Free type cannot be read in the statement that borrows it mutably, also when only one branch of an `if` expression reads it (issue #179). Before, the read was accepted, and the program printed `1` built with clang and `11` built with gcc: nothing put the read before `bump`.

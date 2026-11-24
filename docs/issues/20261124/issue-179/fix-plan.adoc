@@ -1,0 +1,93 @@
+= issue #179 の修正計画: 書き込みで借用されている変数の読み取りを断る
+
+== 目的
+
+issue #179 は、判断を求めている。`Free` の型の変数を、同じ文の中で書き込みの借用をしているときに、値として読めてよいか。
+
+[source]
+----
+var x: Cell := Cell(n => 1);
+showCellThenNumber(x, bump(&!x));
+showNumberThenCell(bump(&!x), x);
+----
+
+いまは受ける。#53 で評価順を左から右に決めたので、結果は一意である（`1`、`100`、`100`、`21`）。
+
+終わりの条件は、判断を決めて、コンパイラ、テスト、文書を、その判断に合わせることである。
+
+== 判断
+
+*断る。書き込みで借用されている変数は、どの宇宙の変数でも、読めない。*
+
+* README の柱の3つ目は、「明示的であること（驚き最小の原則）」である。`show(bump(&!x), x)` が渡す `x` の値は、引数の順で変わる。読む人は、評価順の規則を知らないと、結果を言い当てられない。
+* 同じ文に、読み取りの借用と書き込みの借用を書くと、いまも断られる。値としての読み取りだけを受けるのは、釣り合わない。
+* 断ると、評価順の固定の段が単純になる。「書き込みの借用が及んでいる変数を読む式」を一時変数へ移す仕組みが、要らなくなる。
+* 受けていたプログラムは、読み取りを借用の前の文へ移せば、通る（`let before: Cell := x;`）。意図が、プログラムに書かれる。
+
+規則は、`borrow` 文の本体にも同じに及ぶ。無名の借用（`&!x`）は、脱糖が、文を包む `borrow` 文に書き換えているからである。
+
+所有者の代わりに選んだ既定である。違う判断にするときは、この PR を取り消して、issue を開き直す。
+
+== 現状
+
+`origin/master` で確かめた。上のプログラムは、`1`、`100`、`100`、`21` を出力する（`test-programs/suites/020-evaluation-order/015-variable-is-read-before-a-later-argument-changes-it` が固定している）。
+
+関係するコードは次のとおりである。
+
+* `lib/LinearityCheck.ml` の `check_var_consumed_on_every_path`: 状態が `BorrowedWrite` の変数が式に現れたとき、`error_write_borrowed_and_consumed` を呼ぶ。この関数は、宇宙が `Linear` か `Type` の変数にだけエラーを出し、`Free` の変数は通す。
+* `lib/EvaluationOrderDependence.ml`、`lib/EvaluationOrderOfExpression.ml`、`lib/EvaluationOrderOfStatement.ml`: 書き込みの借用が及んでいる変数の表（`write_borrowed_variables`）を持ち回り、その変数を読む被演算子を「評価の順で結果が変わりうる式」として、一時変数へ移す。
+
+断るコンパイラを試しに作って、スイート、標準ライブラリ、例を通した。通らなくなったのは、テスト2件だけである（`020/015` と、`038-late-stage-paths/006-free-variable-used-while-borrowed`）。標準ライブラリと例は、この形を使っていない。
+
+== 変更
+
+* `lib/LinearityCheck.ml`: `error_write_borrowed_and_consumed` を `error_write_borrowed_and_used` にし、`Free` の変数にもエラーを出す。必ずエラーになるので、呼び出しの後ろの行を消す。
+* `lib/LinearityErrors.ml`: `ReadWhileBorrowedWrite` と、その文面を足す。`Free` の変数は使っても消費されないので、「consumed」の文面は使えない。
+* `lib/EvaluationOrderDependence.ml`、`lib/EvaluationOrderOfExpression.ml`、`lib/EvaluationOrderOfStatement.ml`: `write_borrowed_variables` の引数を消す。変数を読む式は、評価の順で結果が変わらない式になる。
+* `docs/walkthrough.md`: 線形性の検査の規則 2 と、評価順の固定の節を、判断に合わせる。
+
+== テスト
+
+最初に書く、失敗するテスト。直す前は、どちらのプログラムもコンパイルが通る。`test-programs/suites/007-borrowing` に置く。
+
+* `039-read-of-a-variable-in-the-statement-that-borrows-it-mutably`: issue のプログラムの1つ目の呼び出し。`020/015` のプログラムを移して作る。
+* `040-read-of-a-variable-inside-its-mutable-borrow`: `borrow` 文の本体での読み取り。`038/006` の後半を移して作る。
+
+変えるテスト。
+
+* `020-evaluation-order/015`: 消す。固定していた振る舞いが、なくなる。
+* `038-late-stage-paths/006-free-variable-used-while-borrowed`: 読み取りの借用の中の読み取りだけを残す。これは、受け続ける。
+
+== 確認
+
+* 計測値: 行数が変わる。`measure.sh --record` で記録し直す。
+* エラーメッセージのテスト: 新しい文面を、上の2つのテストが固定する。
+* カバレッジ: `error_write_borrowed_and_used` の2つの枝を、新しいテスト（`Free`）と、既にある線形の値のテストが実行する。
+
+== 範囲外
+
+* 読み取りで借用されている `Free` の変数の読み取り。受け続ける。読み取りの参照は、変数を変えない。
+* `x := f(&!x);` のように、借用している変数へ同じ文で代入すること。いまも断られる（規則 8）。
+
+== セルフレビュー
+
+issue の本文に照らして見直した。
+
+* 「断るなら、線形性の検査に、『書き込みの借用がある文の中では、その変数を読めない』という規則を足す」: 足す。`borrow` 文の本体にも及ぶことを、判断の節に書いた。
+* 「受けていたプログラムが、通らなくなる」: リポジトリの中では、テスト2件だけである。
+* 「`docs/walkthrough.md` の『評価順の固定』の節が、規則を説明している」: 節を書き直す。
+* 呼び出し元: `depends_on_evaluation_order` を呼ぶのは `EvaluationOrderOfExpression` だけで、`fix_evaluation_order_of_expression` を呼ぶのは `EvaluationOrderOfStatement` だけである。
+* 見直しで足したこと: `write_borrowed_variables` の仕組みを消すこと。残すと、実行されても結果が変わらないコードになる。
+
+== 実装の記録
+
+* `tools/refactoring/run-every-ci-check-locally.sh` の 14 個の検査は、すべて `ok` だった。途中で、カバレッジの検査が、エラーの後ろの実行されない1行を見つけた。その行を消した。
+* issue のプログラムは、次のエラーになる（終了コード 255）。
++
+----
+The variable `x` cannot be read while it is borrowed (mutably): the reference can change it. Read it through the reference, or before the borrow.
+----
+* コードレビューで、抜けを1つ見つけて直した。`if` 式の片方の枝や、`and` と `or` の右辺だけが `Free` の変数を読むと、線形性の検査（`check_var_in_expr`）が、変数の状態を見ずに通していた。`show(if c then x else y, bump(&!x))` が通り、一時変数へ移す仕組みはもうないので、gcc では `11`、clang では `1` を出力した。片方の道だけの読み取りも、状態を見るようにした。テストは `007-borrowing/041-read-on-one-path-of-a-variable-in-the-statement-that-borrows-it-mutably` である。
+* コードレビューが、前からある不具合を2つ見つけた。この PR では直さず、issue にした。
+** #191: `for` ループの変数を借用すると、コンパイラが内部エラーで止まる。
+** #192: この規則が、`for` の範囲と、代入の左辺の添字には届かない。制御の持ち上げが、これらを別の文へ移すからである。断るかどうかは、判断が要る。

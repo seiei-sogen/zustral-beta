@@ -1,0 +1,27 @@
+{
+  "module": "Test",
+  "kind": "Linearity Error",
+  "text": [
+    { "type": "text", "content": "The variable " },
+    { "type": "code", "content": "x" },
+    {
+      "type": "text",
+      "content": " cannot be read while it is borrowed (mutably): the reference can change it. Read it through the reference, or before the borrow."
+    }
+  ],
+  "span": {
+    "filename": "test-programs/suites/007-borrowing/041-read-on-one-path-of-a-variable-in-the-statement-that-borrows-it-mutably/Test.zum",
+    "startp": { "line": 22, "column": 8 },
+    "end": { "line": 22, "column": 68 }
+  },
+  "context": [
+    [ 20, "        let other: Cell := Cell(n => 0);" ],
+    [ 21, "        let chooseX: Bool := true;" ],
+    [
+      22,
+      "        showCellThenNumber(if chooseX then x else other, bump(&!x));"
+    ],
+    [ 23, "        return ExitSuccess();" ],
+    [ 24, "    end;" ]
+  ]
+}

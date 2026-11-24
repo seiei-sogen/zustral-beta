@@ -1,0 +1,24 @@
+{
+  "module": "Test",
+  "kind": "Linearity Error",
+  "text": [
+    { "type": "text", "content": "The variable " },
+    { "type": "code", "content": "n" },
+    {
+      "type": "text",
+      "content": " cannot be read while it is borrowed (mutably): the reference can change it. Read it through the reference, or before the borrow."
+    }
+  ],
+  "span": {
+    "filename": "test-programs/suites/007-borrowing/040-read-of-a-variable-inside-its-mutable-borrow/Test.zum",
+    "startp": { "line": 5, "column": 12 },
+    "end": { "line": 5, "column": 30 }
+  },
+  "context": [
+    [ 3, "        var n: Int32 := 5;" ],
+    [ 4, "        borrow w: &![Int32, S] := &!n do" ],
+    [ 5, "            let b: Int32 := n;" ],
+    [ 6, "            printLn(b + !w);" ],
+    [ 7, "        end borrow;" ]
+  ]
+}

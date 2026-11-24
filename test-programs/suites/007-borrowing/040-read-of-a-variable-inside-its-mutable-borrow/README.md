@@ -1,0 +1,1 @@
+Test that a variable of a Free type cannot be read inside a `borrow` statement that borrows it mutably (issue #179). The body reads the variable through the reference instead. Before, the read was accepted.

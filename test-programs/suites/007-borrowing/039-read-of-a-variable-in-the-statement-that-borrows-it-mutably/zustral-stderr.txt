@@ -1,0 +1,24 @@
+{
+  "module": "Test",
+  "kind": "Linearity Error",
+  "text": [
+    { "type": "text", "content": "The variable " },
+    { "type": "code", "content": "x" },
+    {
+      "type": "text",
+      "content": " cannot be read while it is borrowed (mutably): the reference can change it. Read it through the reference, or before the borrow."
+    }
+  ],
+  "span": {
+    "filename": "test-programs/suites/007-borrowing/039-read-of-a-variable-in-the-statement-that-borrows-it-mutably/Test.zum",
+    "startp": { "line": 20, "column": 8 },
+    "end": { "line": 20, "column": 41 }
+  },
+  "context": [
+    [ 18, "    function main(): ExitCode is" ],
+    [ 19, "        var x: Cell := Cell(n => 1);" ],
+    [ 20, "        showCellThenNumber(x, bump(&!x));" ],
+    [ 21, "        return ExitSuccess();" ],
+    [ 22, "    end;" ]
+  ]
+}
