@@ -136,10 +136,12 @@ for text, name in quoted.items():
         findings.append(f"refactoring plan section 6 does not quote the recorded {name}: expected {text!r}")
 
 # The plan's target for mutable state is 0 by the count the plan was made with. The table must say what is measured now.
-now = dict(line.split() for line in (baseline.parent / "expected" / "totals.txt").read_text().splitlines())
+recorded_metrics_rows = [row.split("\t") for row in (baseline.parent / "expected" / "metrics.tsv").read_text().splitlines()]
+planstate_column = recorded_metrics_rows[0].index("planstate")
+planstate_now = str(sum(int(row[planstate_column]) for row in recorded_metrics_rows[1:]))
 state_row = re.search(r"^\| 可変の状態（計画の時点の数え方） \|.*\| (\d+) \|$", measured, re.M)
-if not state_row or state_row.group(1) != now["planstate"]:
-    findings.append(f"refactoring plan section 6 does not end the row of mutable state by the plan's count with the measured {now['planstate']}")
+if not state_row or state_row.group(1) != planstate_now:
+    findings.append(f"refactoring plan section 6 does not end the row of mutable state by the plan's count with the measured {planstate_now}")
 
 path = sorted(closure("D7", {"D7"}), key=by_id)
 print(f"open issues: {len(open_issues)}, items with a heading: {len(deps)}, of which refactoring: {len(refactoring_items)}, spec 15 rows: {len(rows)}")

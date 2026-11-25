@@ -1,43 +1,48 @@
 ---
 name: zustral-software-factory
-description: The Stral Software Factory。issue を1件ずつ、事前調査、計画、セルフレビュー、実装、コードレビュー、PR、CI が通ったらマージ、と回して次の issue へ進む。引数がなければ、README の「次にやること」から issue を取る。issue をこのファクトリーで片付けるよう頼まれたときに使う。
+description: The Stral Software Factory。開いている issue を2つの作業役に分けて、並べて直す。作業役は issue を1件ずつ、調査、計画、セルフレビュー、実装、コードレビュー、PR、CI が通ったらマージ、と回して次の issue へ進む。引数がなければ、README の「次にやること」から issue を取る。issue をこのファクトリーで片付けるよう頼まれたときに使う。
 ---
 
 # The Stral Software Factory
 
-issue を1件ずつ直してマージし、次の issue へ進む。扱う issue がなくなるまで繰り返す。
-1つの issue に1つの PR を立てる。
+issue を作業役に分けて、並べて直す。作業役は2つまでである。
+作業役は、渡された issue を1件ずつ直してマージし、次の issue へ進む。1つの issue に1つの PR を立てる。
+
+このスキルを呼ばれたセッションは、調整役である。調整役は、issue を分け、作業役を起こし、終わりに記録を書く。issue は直さない。
+作業役の手順は、[`worker-takes-each-assigned-issue-from-investigation-to-merge.md`](worker-takes-each-assigned-issue-from-investigation-to-merge.md) にある。
 
 扱う issue は、引数に番号があればその issue だけである。
-引数がなければ、`README.md` の「いまの進み具合と、次にやること」節の「次にやること」から取る。1回目の手順1でこの一覧を上から読み、番号が挙がっていて、まだ開いている issue を、書かれた順に扱う。「#73 から #83」のような範囲は、その間の番号をすべて含む。issue の番号がない項目（所有者が確かめる項目など）は、扱わずに飛ばす。
+引数がなければ、`README.md` の「いまの進み具合と、次にやること」節の「次にやること」から取る。手順1でこの一覧を上から読み、番号が挙がっていて、まだ開いている issue を、書かれた順に扱う。「#73 から #83」のような範囲は、その間の番号をすべて含む。issue の番号がない項目（所有者が確かめる項目など）は、扱わずに飛ばす。
 「次にやること」に開いている issue が1件も挙がっていなければ、何もせずに「終わるとき」へ進み、そう報告する。
-途中で立てた issue は、この実行では扱わない。手順7が「次にやること」に書くので、次の実行が拾う。
-
-計画と実行は、pstack の poteto-mode で行う。始める前に、Skill ツールで `pstack:poteto-mode` を呼ぶ。
-手順3から6は、issue に合う poteto-mode の playbook（Bug fix、Feature、Refactoring など）に従って進め、その計画を `fix-plan.adoc` に書く。
-PR とマージは、poteto-mode の Opening a PR、Babysit、Shipping ではなく、このスキルの手順8と9に従う。
+途中で立てた issue は、この実行では扱わない。手順3で「次にやること」に書くので、次の実行が拾う。
 
 ## 置き場
 
 ```
 docs/issues/<日付>/                          1回の実行。日付は TZ=Asia/Tokyo date +%Y%m%d
-└── issue-<番号>/
+├── issue-assignment-to-workers.json       扱う issue と、作業役への分け方。調整役だけが書く
+└── issue-<番号>/                          その issue の作業役が書く
     ├── preliminary-investigation.json     その issue の事前調査
-    └── fix-plan.adoc                      修正の計画と、そのセルフレビュー
+    ├── fix-plan.adoc                      修正の計画と、そのセルフレビュー
+    └── totals.txt                         PR の木の計測値の合計（measure.sh --tree .）
 ```
 
-事前調査は、issue ごとに1ファイルにする。実行の全体で1つのファイルにすると、どの PR もそれを書き換えるので、コンフリクトの原因になる。
-1つの PR に入れるのは、その issue のディレクトリと、前の PR のあとに `skipped` にした issue のディレクトリだけである。ほかの issue のファイルは書き換えない。
-`docs/issues/20261124/` は、実行の全体で1つの JSON を置いていたころの記録である。そのままにする。
+どのファイルも、書き換える PR は1つだけにする。事前調査を issue ごとのファイルにするのも、そのためである。1つのファイルを複数の PR が書き換えると、後からマージする側が衝突する。
+`docs/issues/20261124/preliminary-investigation.json` は、実行の全体で1つの事前調査を置いていたころの記録である。そのままにする。
 
 その日のディレクトリが既にあれば、それを使う。
-途中から再開するときは、日付が変わっていても、いちばん新しい日付のディレクトリを使う。事前調査の `status` が `next` の issue、または PR がまだマージされていない `done` の issue について、計画、ブランチ、PR のどこまで済んだかを見て、済んでいない最初の手順から続ける。
+途中から再開するときは、日付が変わっていても、いちばん新しい日付のディレクトリを使い、手順1からやり直す。PR が開いたままの issue は、渡された作業役が、その続きから進める。
 
-## 1つの issue の流れ
+## 1. issue を作業役に分ける
 
-### 1. 次の issue を選んで、事前調査を書く
+最新の `origin/master` から、記録のためのブランチを作る。名前は、セッションに指定されたブランチがあればそれ、なければ `zustral-software-factory-record-<日付>` にする。
 
-毎回、開いている issue を取り直す。
+```bash
+git fetch --prune origin
+git checkout -B <ブランチ> origin/master
+```
+
+開いている issue を取る。
 
 ```bash
 gh api 'repos/seiei-sogen/zustral-beta/issues?state=open&per_page=100&page=1' \
@@ -46,168 +51,92 @@ gh api 'repos/seiei-sogen/zustral-beta/issues?state=open&per_page=100&page=1' \
 
 1ページが100件で埋まっていたら、`page` を増やして次のページも取る。
 
-扱う issue のうち、まだ開いていて、この実行で `skipped` にも `done` にもしていないものが候補である。
-引数がないときの候補の並びは、1回目に読んだ `README.md` の「次にやること」の順である。
+引数がないときは、`README.md` の「次にやること」を読み、そこに挙がった番号のうち、上のコマンドで開いていると分かったものだけを扱う。
 
-候補を前から見て、次の issue を1件選ぶ。
-
-- 所有者の判断が要る issue と、1つの PR に収まらない issue は `skipped` にする。`skipped` の issue に依存する issue も `skipped` にする。
-- 引数がないときは、`skipped` でない最初の候補を選ぶ。ただし、それが依存する候補が後ろにあれば、そちらを先にする。
-- 引数があるときは、依存される issue を先に、小さい issue を先にする。
-
-`skipped` にした issue には、`number`、`title`、`summary`、`depends_on`、`status`、`reason` だけの事前調査を書く。
-選んだ issue には、`issue-<番号>/preliminary-investigation.json` を、次の形で書く。
+扱う issue を、`issue-assignment-to-workers.json` に次の形で書く。issue の中身の調べは、作業役が手順2で、issue ごとの事前調査に書く。ここでは、分けるのに要るだけ調べる。
 
 ```json
 {
-  "number": 171,
-  "title": "issue の題",
   "base_commit": "調査したときの origin/master の SHA",
-  "summary": "issue が求めていること",
-  "depends_on": [],
-  "status": "next",
-  "reason": "この status にした理由",
-  "current_behavior": "いまの振る舞いと、それを確かめたコマンドと出力",
-  "how_it_works_now": "入口から、問題の起きる場所までの、コードの流れ。読んだファイルと関数を挙げる",
-  "why_it_is_this_way": [
+  "issues": [
     {
-      "claim": "いまの形になった理由",
-      "source": "コミットの SHA、PR や issue の番号、文書のパス",
-      "kind": "quoted か inferred"
+      "number": 171,
+      "title": "issue の題",
+      "summary": "issue が求めていること",
+      "depends_on": [],
+      "related_code": ["lib/…"],
+      "status": "queued",
+      "assigned_to_worker": 1,
+      "reason": "この status と、この作業役にした理由"
     }
-  ],
-  "unanswered_by_the_record": ["記録を探しても分からなかったこと"],
-  "related_code": ["lib/…: 関数名"],
-  "related_tests": ["test-programs/suites/…"],
-  "affected_ci_checks": ["tools/refactoring/measure.sh の記録"],
-  "risks": []
+  ]
 }
 ```
 
-- `status` は `next`、`skipped`、`done` のどれかである。`done` は PR を立てたことを表す。
-- 不具合の issue は、いまのコンパイラで再現してから `current_behavior` に書く。
-- `how_it_works_now` は、pstack の `how` スキルに従って調べる。この issue に関係する範囲に絞る。
-- `why_it_is_this_way` は、pstack の `why` スキルに従って調べる。コードからではなく、記録から答える。関係するコードを入れたコミットと、その PR、issue、`docs/` の文書を、`git log -S`、`git blame`、`gh api` で辿る。書いた人の言葉は `quoted`、自分の推測は `inferred` にする。直そうとしている振る舞いが、わざと選ばれたものでないかを、ここで確かめる。わざと選ばれていたら、所有者の判断が要るので `skipped` にする。
-- `how` と `why` は Skill ツールでは呼べない。poteto-mode の `SKILL.md` と同じ階層の `../how/SKILL.md` と `../why/SKILL.md` を読んで、それに従う。
+- `status` は `queued`、`skipped`、`done` のどれかである。`done` は PR をマージしたことを表す。
+- 所有者の判断が要る issue と、1つの PR に収まらない issue は `skipped` にする。`skipped` の issue に依存する issue も `skipped` にする。
+- `related_code` は、その issue が触りそうなファイルの見込みである。issue の本文と、コードの検索から出す。
+- `assigned_to_worker` は 1 か 2 で、`queued` の issue にだけ書く。
+  - 依存でつながる issue は、同じ作業役に渡す。`related_code` が重なる issue も、同じ作業役に渡す。2つの作業役が同じファイルを書くと、後からマージする側が衝突するからである。
+  - 残りは、2つの作業役の件数がそろうように分ける。
+  - `issues` には、作業役が片付ける順に並べる。引数がないときは、「次にやること」の順にする。ただし、依存される issue が後ろにあれば、それを先にする。引数があるときは、依存される issue を先に、小さい issue を先にする。
+  - `queued` の issue がすべて1つの作業役に集まるなら、作業役は1つにする。
 
-選べる issue が1件もなければ、「終わるとき」へ進む。
+`queued` の issue が1件もなければ、何も push せずに、「終わるとき」へ進む。
 
-この手順は、選んだ issue の事前調査の各項目が、読んだコードか、実行したコマンドか、引用元のある記録に基づいていれば終わりである。
-
-### 2. 作業ブランチを用意する
-
-最新の `origin/master` から作る。名前は、セッションに指定されたブランチがあればそれ、なければ `issue-<番号>` にする。
-前の issue と同じ名前を使い回すこともあるので、作り直す形にする。
-`--prune` を付けて全体を取るのは、手順8の `--force-with-lease` がリモートのブランチのいまの位置を知っている必要があるからである。
-
-```bash
-git fetch --prune origin
-git checkout -B <ブランチ> origin/master
-```
-
-### 3. 計画を立てる
-
-`issue-<番号>/fix-plan.adoc` に AsciiDoc で書く。その issue の事前調査をもとにする。節は次の通りである。
-
-- `== 目的`: issue が求めていることと、終わりの条件。
-- `== 現状`: いまの振る舞いと、関係するコードとテスト。
-- `== 変更`: 変えるファイルと関数、新しく作るファイル。AGENTS.md の命名、ディレクトリ構造、ファイルの分け方に従う。
-- `== テスト`: 最初に書く、失敗するテスト。
-- `== 確認`: CI の検査への影響。計測値の記録し直し、エラーメッセージのテスト、カバレッジ。
-- `== 範囲外`: この PR でしないこと。
-
-### 4. 計画をセルフレビューする
-
-issue の本文とコメントに照らして、計画を3回見直す。毎回、次の3つをすべて見る。
-
-- issue が求めることの一つ一つに、変更とテストが対応しているか。
-- 変更が届くべき呼び出し元、テスト、記録がすべて挙がっているか。
-- AGENTS.md の約束に沿っているか。
-
-1回ごとに計画を直し、見つけたことと直したことを、末尾の `== セルフレビュー` の `=== 1回目`、`=== 2回目`、`=== 3回目` に書く。
-2回目と3回目は、前の回で直した箇所も含めて、計画を頭から読み直す。何も見つからなかった回も、そう書く。途中の回で何も見つからなくても、3回やる。
-
-### 5. 実装する
-
-計画に従い、`/superpowers:test-driven-development` で実装する。計画と違うことをしたら、計画にそう書き足す。
-
-この手順は、次の検査がすべて `ok` になれば終わりである。
-
-```bash
-nix-shell --command 'tools/refactoring/run-every-ci-check-locally.sh'
-```
-
-### 6. コードレビューで直す
-
-`git fetch origin master` のあと、Claude Code の `/code-review` を実行する。Skill ツールなら、スキル `code-review` に次の引数を渡す。
-最後の3語を落とすと、コミットしていない差分がレビューから漏れる。
-
-```
-high --fix origin/master...HEAD plus uncommitted changes
-```
-
-直したら、手順5の検査をもう一度すべて通す。
-
-この issue の範囲外の指摘で、直す価値があるものは、新しい issue にする。
-
-```bash
-gh api repos/seiei-sogen/zustral-beta/issues -f title='…' -F body=@<本文のファイル>
-```
-
-### 7. 進み具合を記録する
-
-この PR がマージされた後の状態として、次の2つを書き直す。
-PR を立てる前のコミットに入れるのは、記録のためだけに CI をもう1周回さないためである。
-
-- この issue の事前調査の `status` を `done` にする。
-- `README.md` の「いまの進み具合と、次にやること」節。いまの書き方に合わせて、次のように直す。
-  - 冒頭の「… の時点の状態である」の日付を、今日にする。
-  - 「終わったこと」には、この実行の項目を1つ置き、`docs/issues/<日付>/` にリンクする。直した issue は、その項目に書き足す。
-  - 「次にやること」から、直した issue を消す。まだ扱っていない issue、`skipped` のうち判断が要る issue、手順6で立てた issue を、進める順に書く。
-
-### 8. PR を立てる
-
-残りを日本語でコミットして push し、PR を立てる。
-リモートに前の issue のマージ済みのブランチが残っていることがあるので、`--force-with-lease` で上書きする。手順2のあとに誰かが push していれば、push は断られる。そのときは止める。
+`issue-assignment-to-workers.json` を日本語でコミットして push する。クラウド環境のコンテナは、作業役を待つあいだに回収されることがあるからである。
 
 ```bash
 git push --force-with-lease -u origin <ブランチ>
-gh api repos/seiei-sogen/zustral-beta/pulls -f base=master -f head=<ブランチ> \
-  -f title='…' -F body=@<本文のファイル>
 ```
 
-本文には次を書く。
+この手順は、`issue-assignment-to-workers.json` の扱う issue のすべてに `status` と `reason` があり、`queued` の issue のすべてに `assigned_to_worker` があれば終わりである。
 
-- `Closes #<番号>`
-- 何を、どう直したか。
-- 計画のパス。
-- 手順5の検査の結果。
-- コードレビューで直したことと、立てた issue。
+## 2. 作業役を起こして、報告を待つ
 
-### 9. CI が通ったらマージする
+作業役ごとに、次の依頼を渡す。下の2行は、クラウド環境でだけ書く。
 
-CI を待つ。クラウド環境では `subscribe_pr_activity` で PR を購読してターンを終え、CI の通知で再開する。手元では `gh pr checks <PR 番号> --watch` で待つ。
+```
+.claude/skills/zustral-software-factory/worker-takes-each-assigned-issue-from-investigation-to-merge.md を読み、その手順で、issue #<番号>、#<番号> を、この順に片付ける。
+作業記録のディレクトリは docs/issues/<日付>/ である。
+作業ブランチは zustral-software-factory-worker-<1 か 2> である。
+終わったとき、または止まったときの報告は、send_message でセッション <調整役のセッション ID> へ送る。
+```
 
-CI が落ちたら、原因を直して push し、PR の本文をいまの内容に合わせて更新する（`gh api -X PATCH repos/seiei-sogen/zustral-beta/pulls/<PR 番号> -F body=@<本文のファイル>`）。そしてまた待つ。
+| | クラウド環境 | 手元 |
+|---|---|---|
+| 起こし方 | `create_session`。`source_url` にこのリポジトリ、`outcome_branch` に依頼と同じ作業ブランチ | Agent ツール。`isolation: "worktree"` |
+| 報告の届き方 | 作業役の `send_message` が、新しいターンとして届く。調整役のセッション ID は `get_session` で分かる | Agent ツールの結果 |
 
-push した最後のコミットの check run が1件以上あり、そのすべてが `completed` で `success` になったら、squash でマージする。
-手元では、作業ブランチ `issue-<番号>` をリモートから消す。クラウド環境ではブランチを消せないので残し、購読をやめる。残したブランチは、次の issue の手順8で上書きされる。
+2つの作業役は、1つの返事の中で続けて起こす。起こしたら、報告を待つ。クラウド環境では、ターンを終える。
+
+この手順は、起こした作業役のすべてから報告が届けば終わりである。
+
+## 3. 記録を書く
+
+記録のためのブランチに、いまの master を取り込む。
 
 ```bash
-gh api repos/seiei-sogen/zustral-beta/commits/<SHA>/check-runs \
-  --jq '.check_runs[] | [.name, .status, .conclusion] | @tsv'
-gh api -X PUT repos/seiei-sogen/zustral-beta/pulls/<PR 番号>/merge -f merge_method=squash -f sha=<SHA>
-gh api -X DELETE repos/seiei-sogen/zustral-beta/git/refs/heads/issue-<番号>  # 手元だけ
+git fetch origin master
+git merge --no-edit origin/master
 ```
 
-手順1に戻る。
+次を書き直す。
+
+- `issue-assignment-to-workers.json`。マージされた issue の `status` を `done` にする。片付かなかった issue と、作業役が飛ばした issue は、`status` を直し、`reason` に作業役の報告を書く。
+- 作業役が、PR に入れられなかった事前調査を報告に書いてきたら、それを `issue-<番号>/preliminary-investigation.json` に書く。
+- `README.md` の「いまの進み具合と、次にやること」節。いまの書き方に合わせて、次のように直す。
+  - 冒頭の「… の時点の状態である」の日付を、今日にする。
+  - 「終わったこと」には、この実行の項目を1つ置き、`docs/issues/<日付>/` にリンクする。直した issue は、その項目に書き足す。
+  - 「次にやること」から、直した issue を消す。`issue-assignment-to-workers.json` に残る issue、`skipped` のうち判断が要る issue、作業役が立てた issue を、進める順に書く。
+
+日本語でコミットして `git push` し、PR を立て、CI が通ったらマージする。PR の立て方、CI の待ち方、マージのしかたは、作業役の手順6と7と同じである。この PR は issue を閉じないので、本文に `Closes` は書かない。
 
 ## 終わるとき
 
-選べる issue がなくなったら終わる。原因の分からないまま CI が落ち続けるときも、そこで止める。
-最後に次を報告する。
+最後に、作業役の報告を合わせて、次を報告する。
 
 - マージした PR と、閉じた issue。
-- `skipped` にした issue と、その理由。
+- `skipped` にした issue と、作業役が飛ばした issue と、その理由。
 - 新しく立てた issue。
-- 止めたなら、止めた手順と、その理由。
+- 止まった作業役があれば、止まった手順と、その理由。

@@ -1,0 +1,13 @@
+files 104
+lines 17484
+raise 262
+catch 6
+state 6
+io 60
+wildcard 14
+strings 65
+internal 14
+adhoc 0
+coreio 0
+names 0
+planstate 0

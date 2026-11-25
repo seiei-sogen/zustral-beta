@@ -8,7 +8,7 @@
 #                         the sample lines in samples/ (every other mode does
 #                         this first, and stops if a sample disagrees)
 #   measure.sh --tree DIR print the totals of the tree at DIR; nothing is compared
-#                         or recorded
+#                         or recorded (--tree . prints the totals of this checkout)
 #
 # The numbers of the time the plan was made (baseline/totals.txt) are counted
 # with --tree, on the tree of commit b3aa759. That tree has no cli/: the edge
@@ -205,8 +205,9 @@ if ((SELF_TEST)); then self_test; exit $?; fi
 self_test > "$T/self-test.log" || { cat "$T/self-test.log"; echo "the patterns disagree with samples/"; exit 1; }
 failed=0
 metrics > "$T/metrics.tsv"
-totals "$T/metrics.tsv" > "$T/totals.txt"
-if [[ -n $TREE ]]; then cat "$T/totals.txt"; exit 0; fi
+if [[ -n $TREE ]]; then totals "$T/metrics.tsv"; exit 0; fi
+# The totals are not on the record: they are sums of the rows, and a recorded sum conflicts
+# whenever two pull requests change a count at the same time. Each pull request of the
+# software factory keeps its totals in docs/issues/<date>/issue-<number>/totals.txt.
 check metrics.tsv
-check totals.txt
 exit "$failed"
