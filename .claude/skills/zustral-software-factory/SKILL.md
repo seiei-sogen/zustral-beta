@@ -1,6 +1,6 @@
 ---
 name: zustral-software-factory
-description: The Stral Software Factory。issue を1件ずつ、事前調査、計画、セルフレビュー、実装、コードレビュー、PR、CI が通ったらマージ、と回して次の issue へ進む。issue をこのファクトリーで片付けるよう頼まれたときに使う。
+description: The Stral Software Factory。issue を1件ずつ、事前調査、計画、セルフレビュー、実装、コードレビュー、PR、CI が通ったらマージ、と回して次の issue へ進む。引数がなければ、README の「次にやること」から issue を取る。issue をこのファクトリーで片付けるよう頼まれたときに使う。
 ---
 
 # The Stral Software Factory
@@ -8,8 +8,10 @@ description: The Stral Software Factory。issue を1件ずつ、事前調査、�
 issue を1件ずつ直してマージし、次の issue へ進む。扱う issue がなくなるまで繰り返す。
 1つの issue に1つの PR を立てる。
 
-扱う issue は、引数に番号があればその issue だけ、なければ1回目の手順1で開いていた issue のすべてである。
-途中で立てた issue は、この実行では扱わない。
+扱う issue は、引数に番号があればその issue だけである。
+引数がなければ、`README.md` の「いまの進み具合と、次にやること」節の「次にやること」から取る。1回目の手順1でこの一覧を上から読み、番号が挙がっていて、まだ開いている issue を、書かれた順に扱う。「#73 から #83」のような範囲は、その間の番号をすべて含む。issue の番号がない項目（所有者が確かめる項目など）は、扱わずに飛ばす。
+「次にやること」に開いている issue が1件も挙がっていなければ、何もせずに「終わるとき」へ進み、そう報告する。
+途中で立てた issue は、この実行では扱わない。手順7が「次にやること」に書くので、次の実行が拾う。
 
 計画と実行は、pstack の poteto-mode で行う。始める前に、Skill ツールで `pstack:poteto-mode` を呼ぶ。
 手順3から6は、issue に合う poteto-mode の playbook（Bug fix、Feature、Refactoring など）に従って進め、その計画を `fix-plan.adoc` に書く。
@@ -31,6 +33,7 @@ docs/issues/<日付>/                     1回の実行。日付は TZ=Asia/Toky
 ### 1. 事前調査の JSON を作る、または更新する
 
 1回目は作る。2回目からは、開いている issue を取り直して、次の issue に合わせて書き直す。
+引数がないときは、1回目に `README.md` の「次にやること」を読み、そこに挙がった番号のうち、下のコマンドで開いていると分かったものだけを `issues` に入れる。並びは「次にやること」の順にする。
 
 ```bash
 gh api 'repos/seiei-sogen/zustral-beta/issues?state=open&per_page=100&page=1' \
@@ -65,7 +68,7 @@ gh api 'repos/seiei-sogen/zustral-beta/issues?state=open&per_page=100&page=1' \
 
 - `status` は `next`、`queued`、`skipped`、`done` のどれかである。`done` は PR を立てたことを表す。
 - 所有者の判断が要る issue と、1つの PR に収まらない issue は `skipped` にする。`skipped` の issue に依存する issue も `skipped` にする。
-- `next` は1件だけにする。依存される issue を先に、小さい issue を先にする。
+- `next` は1件だけにする。引数がないときは、「次にやること」の順で、`skipped` でも `done` でもない最初の issue にする。ただし、依存される issue が後ろにあれば、それを先にする。引数があるときは、依存される issue を先に、小さい issue を先にする。
 - 不具合の issue は、いまのコンパイラで再現してから `current_behavior` に書く。
 
 `next` にできる issue が1件もなければ（`next` も `queued` もなければ）、「終わるとき」へ進む。
