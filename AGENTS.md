@@ -33,7 +33,7 @@ CI（`.github/workflows/build-and-test.yml`）は、これ以外にも `tools/re
 - `tools/coding-agent-setup/`: Claude Code のプラグインとスキルを入れるスクリプト。クラウド環境のセットアップスクリプトから呼ぶ。
 - `.claude/skills/cc-init-plugin-install/`: 上のスクリプトを実行するスキル。`/cc-init-plugin-install` で呼ぶ。
 - `.claude/skills/zustral-software-factory/`: The Stral Software Factory。issue を1件ずつ PR にして、CI が通ったらマージまで回すスキル。`/zustral-software-factory` で呼ぶ。
-- `docs/issues/`: The Stral Software Factory の作業記録。日付ごとの事前調査（JSON）と、issue ごとの修正計画（AsciiDoc）を置く。
+- `docs/issues/`: The Stral Software Factory の作業記録。日付ごとのディレクトリの下に、issue ごとの事前調査（JSON）と修正計画（AsciiDoc）を置く。
 
 ## 設計の考え方
 
