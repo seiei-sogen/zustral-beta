@@ -19,7 +19,9 @@ issue を作業役に分けて、並べて直す。作業役は2つまでであ�
 ```
 docs/issues/<日付>/                     1回の実行。日付は TZ=Asia/Tokyo date +%Y%m%d
 ├── preliminary-investigation.json    事前調査と、issue の分け方。調整役だけが書く
-└── issue-<番号>/fix-plan.adoc        修正の計画と、そのセルフレビュー。その issue の作業役が書く
+└── issue-<番号>/                     その issue の作業役が書く
+    ├── fix-plan.adoc                 修正の計画と、そのセルフレビュー
+    └── totals.txt                    PR の木の計測値の合計（measure.sh --tree .）
 ```
 
 その日のディレクトリが既にあれば、それを使う。

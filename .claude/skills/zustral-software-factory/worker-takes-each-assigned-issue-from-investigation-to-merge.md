@@ -79,6 +79,12 @@ gh api repos/seiei-sogen/zustral-beta/issues -f title='…' -F body=@<本文の�
 
 ### 6. PR を立てる
 
+計測値の合計を、この issue の作業記録に書く。
+
+```bash
+tools/refactoring/measure.sh --tree . > docs/issues/<日付>/issue-<番号>/totals.txt
+```
+
 残りを日本語でコミットし、下の「master を取り込む」を行ってから push して、PR を立てる。
 リモートに前の issue のマージ済みのブランチが残っていることがあるので、`--force-with-lease` で上書きする。手順1のあとに誰かが push していれば、push は断られる。そのときは止める。
 
@@ -139,7 +145,7 @@ git merge --no-edit origin/master
 
 - `tools/refactoring/expected/` の衝突は、手で混ぜない。どちらかの側を取り、その記録を書くスクリプトの `--record` で作り直す（`metrics.tsv` は `tools/refactoring/measure.sh --record`）。作り直した記録は、両方の側の変更を合わせたものになる。どちらの側にもない行が増えていたら、記録せずに、原因を直す。
 - ほかの衝突は、両方の変更が生きるように解く。master の側が何をしたかは、そのコミットの PR の本文と、`docs/issues/` の計画で分かる。
-- 手順4の検査をもう一度すべて通して、コミットする。
+- 手順4の検査をもう一度すべて通す。手順6のコマンドで `totals.txt` を書き直して、コミットする。
 - 解いても検査が通らなければ、`origin/master` からブランチを作り直し、計画に従って実装し直す。作り直したあとの push は、`--force-with-lease` にする。
 
 ## 終わるとき

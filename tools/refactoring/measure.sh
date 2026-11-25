@@ -207,6 +207,7 @@ failed=0
 metrics > "$T/metrics.tsv"
 if [[ -n $TREE ]]; then totals "$T/metrics.tsv"; exit 0; fi
 # The totals are not on the record: they are sums of the rows, and a recorded sum conflicts
-# whenever two pull requests change a count at the same time.
+# whenever two pull requests change a count at the same time. Each pull request of the
+# software factory keeps its totals in docs/issues/<date>/issue-<number>/totals.txt.
 check metrics.tsv
 exit "$failed"
