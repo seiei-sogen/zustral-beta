@@ -20,20 +20,24 @@ PR とマージは、poteto-mode の Opening a PR、Babysit、Shipping ではな
 ## 置き場
 
 ```
-docs/issues/<日付>/                     1回の実行。日付は TZ=Asia/Tokyo date +%Y%m%d
-├── preliminary-investigation.json    事前調査。issue ごとに更新する
-└── issue-<番号>/fix-plan.adoc        修正の計画と、そのセルフレビュー
+docs/issues/<日付>/                          1回の実行。日付は TZ=Asia/Tokyo date +%Y%m%d
+└── issue-<番号>/
+    ├── preliminary-investigation.json     その issue の事前調査
+    └── fix-plan.adoc                      修正の計画と、そのセルフレビュー
 ```
 
+事前調査は、issue ごとに1ファイルにする。実行の全体で1つのファイルにすると、どの PR もそれを書き換えるので、コンフリクトの原因になる。
+1つの PR に入れるのは、その issue のディレクトリと、前の PR のあとに `skipped` にした issue のディレクトリだけである。ほかの issue のファイルは書き換えない。
+`docs/issues/20261124/` は、実行の全体で1つの JSON を置いていたころの記録である。そのままにする。
+
 その日のディレクトリが既にあれば、それを使う。
-途中から再開するときは、日付が変わっていても、いちばん新しい日付のディレクトリを使う。JSON で `next` の issue、または PR がまだマージされていない `done` の issue について、計画、ブランチ、PR のどこまで済んだかを見て、済んでいない最初の手順から続ける。
+途中から再開するときは、日付が変わっていても、いちばん新しい日付のディレクトリを使う。事前調査の `status` が `next` の issue、または PR がまだマージされていない `done` の issue について、計画、ブランチ、PR のどこまで済んだかを見て、済んでいない最初の手順から続ける。
 
 ## 1つの issue の流れ
 
-### 1. 事前調査の JSON を作る、または更新する
+### 1. 次の issue を選んで、事前調査を書く
 
-1回目は作る。2回目からは、開いている issue を取り直して、次の issue に合わせて書き直す。
-引数がないときは、1回目に `README.md` の「次にやること」を読み、そこに挙がった番号のうち、下のコマンドで開いていると分かったものだけを `issues` に入れる。並びは「次にやること」の順にする。
+毎回、開いている issue を取り直す。
 
 ```bash
 gh api 'repos/seiei-sogen/zustral-beta/issues?state=open&per_page=100&page=1' \
@@ -42,38 +46,53 @@ gh api 'repos/seiei-sogen/zustral-beta/issues?state=open&per_page=100&page=1' \
 
 1ページが100件で埋まっていたら、`page` を増やして次のページも取る。
 
+扱う issue のうち、まだ開いていて、この実行で `skipped` にも `done` にもしていないものが候補である。
+引数がないときの候補の並びは、1回目に読んだ `README.md` の「次にやること」の順である。
+
+候補を前から見て、次の issue を1件選ぶ。
+
+- 所有者の判断が要る issue と、1つの PR に収まらない issue は `skipped` にする。`skipped` の issue に依存する issue も `skipped` にする。
+- 引数がないときは、`skipped` でない最初の候補を選ぶ。ただし、それが依存する候補が後ろにあれば、そちらを先にする。
+- 引数があるときは、依存される issue を先に、小さい issue を先にする。
+
+`skipped` にした issue には、`number`、`title`、`summary`、`depends_on`、`status`、`reason` だけの事前調査を書く。
+選んだ issue には、`issue-<番号>/preliminary-investigation.json` を、次の形で書く。
+
 ```json
 {
+  "number": 171,
+  "title": "issue の題",
   "base_commit": "調査したときの origin/master の SHA",
-  "issues": [
+  "summary": "issue が求めていること",
+  "depends_on": [],
+  "status": "next",
+  "reason": "この status にした理由",
+  "current_behavior": "いまの振る舞いと、それを確かめたコマンドと出力",
+  "how_it_works_now": "入口から、問題の起きる場所までの、コードの流れ。読んだファイルと関数を挙げる",
+  "why_it_is_this_way": [
     {
-      "number": 171,
-      "title": "issue の題",
-      "summary": "issue が求めていること",
-      "depends_on": [],
-      "status": "next",
-      "reason": "この status にした理由"
+      "claim": "いまの形になった理由",
+      "source": "コミットの SHA、PR や issue の番号、文書のパス",
+      "kind": "quoted か inferred"
     }
   ],
-  "next_issue": {
-    "number": 171,
-    "current_behavior": "いまの振る舞いと、それを確かめたコマンドと出力",
-    "related_code": ["lib/…: 関数名"],
-    "related_tests": ["test-programs/suites/…"],
-    "affected_ci_checks": ["tools/refactoring/measure.sh の記録"],
-    "risks": []
-  }
+  "unanswered_by_the_record": ["記録を探しても分からなかったこと"],
+  "related_code": ["lib/…: 関数名"],
+  "related_tests": ["test-programs/suites/…"],
+  "affected_ci_checks": ["tools/refactoring/measure.sh の記録"],
+  "risks": []
 }
 ```
 
-- `status` は `next`、`queued`、`skipped`、`done` のどれかである。`done` は PR を立てたことを表す。
-- 所有者の判断が要る issue と、1つの PR に収まらない issue は `skipped` にする。`skipped` の issue に依存する issue も `skipped` にする。
-- `next` は1件だけにする。引数がないときは、「次にやること」の順で、`skipped` でも `done` でもない最初の issue にする。ただし、依存される issue が後ろにあれば、それを先にする。引数があるときは、依存される issue を先に、小さい issue を先にする。
+- `status` は `next`、`skipped`、`done` のどれかである。`done` は PR を立てたことを表す。
 - 不具合の issue は、いまのコンパイラで再現してから `current_behavior` に書く。
+- `how_it_works_now` は、pstack の `how` スキルに従って調べる。この issue に関係する範囲に絞る。
+- `why_it_is_this_way` は、pstack の `why` スキルに従って調べる。コードからではなく、記録から答える。関係するコードを入れたコミットと、その PR、issue、`docs/` の文書を、`git log -S`、`git blame`、`gh api` で辿る。書いた人の言葉は `quoted`、自分の推測は `inferred` にする。直そうとしている振る舞いが、わざと選ばれたものでないかを、ここで確かめる。わざと選ばれていたら、所有者の判断が要るので `skipped` にする。
+- `how` と `why` は Skill ツールでは呼べない。poteto-mode の `SKILL.md` と同じ階層の `../how/SKILL.md` と `../why/SKILL.md` を読んで、それに従う。
 
-`next` にできる issue が1件もなければ（`next` も `queued` もなければ）、「終わるとき」へ進む。
+選べる issue が1件もなければ、「終わるとき」へ進む。
 
-この手順は、扱う issue のすべてに `status` と `reason` があり、`next_issue` の各項目が読んだコードか実行したコマンドに基づいていれば終わりである。
+この手順は、選んだ issue の事前調査の各項目が、読んだコードか、実行したコマンドか、引用元のある記録に基づいていれば終わりである。
 
 ### 2. 作業ブランチを用意する
 
@@ -88,7 +107,7 @@ git checkout -B <ブランチ> origin/master
 
 ### 3. 計画を立てる
 
-`issue-<番号>/fix-plan.adoc` に AsciiDoc で書く。JSON の `next_issue` をもとにする。節は次の通りである。
+`issue-<番号>/fix-plan.adoc` に AsciiDoc で書く。その issue の事前調査をもとにする。節は次の通りである。
 
 - `== 目的`: issue が求めていることと、終わりの条件。
 - `== 現状`: いまの振る舞いと、関係するコードとテスト。
@@ -99,13 +118,14 @@ git checkout -B <ブランチ> origin/master
 
 ### 4. 計画をセルフレビューする
 
-issue の本文とコメントに照らして、計画を1回見直す。見るのは次の3つである。
+issue の本文とコメントに照らして、計画を3回見直す。毎回、次の3つをすべて見る。
 
 - issue が求めることの一つ一つに、変更とテストが対応しているか。
 - 変更が届くべき呼び出し元、テスト、記録がすべて挙がっているか。
 - AGENTS.md の約束に沿っているか。
 
-計画を直し、見つけたことと直したことを、末尾の `== セルフレビュー` に書く。
+1回ごとに計画を直し、見つけたことと直したことを、末尾の `== セルフレビュー` の `=== 1回目`、`=== 2回目`、`=== 3回目` に書く。
+2回目と3回目は、前の回で直した箇所も含めて、計画を頭から読み直す。何も見つからなかった回も、そう書く。途中の回で何も見つからなくても、3回やる。
 
 ### 5. 実装する
 
@@ -139,11 +159,11 @@ gh api repos/seiei-sogen/zustral-beta/issues -f title='…' -F body=@<本文の�
 この PR がマージされた後の状態として、次の2つを書き直す。
 PR を立てる前のコミットに入れるのは、記録のためだけに CI をもう1周回さないためである。
 
-- JSON の `next` を `done` にする。
+- この issue の事前調査の `status` を `done` にする。
 - `README.md` の「いまの進み具合と、次にやること」節。いまの書き方に合わせて、次のように直す。
   - 冒頭の「… の時点の状態である」の日付を、今日にする。
   - 「終わったこと」には、この実行の項目を1つ置き、`docs/issues/<日付>/` にリンクする。直した issue は、その項目に書き足す。
-  - 「次にやること」から、直した issue を消す。JSON に残る issue、`skipped` のうち判断が要る issue、手順6で立てた issue を、進める順に書く。
+  - 「次にやること」から、直した issue を消す。まだ扱っていない issue、`skipped` のうち判断が要る issue、手順6で立てた issue を、進める順に書く。
 
 ### 8. PR を立てる
 
@@ -184,7 +204,7 @@ gh api -X DELETE repos/seiei-sogen/zustral-beta/git/refs/heads/issue-<番号>  #
 
 ## 終わるとき
 
-`next` にできる issue がなくなったら終わる。原因の分からないまま CI が落ち続けるときも、そこで止める。
+選べる issue がなくなったら終わる。原因の分からないまま CI が落ち続けるときも、そこで止める。
 最後に次を報告する。
 
 - マージした PR と、閉じた issue。
