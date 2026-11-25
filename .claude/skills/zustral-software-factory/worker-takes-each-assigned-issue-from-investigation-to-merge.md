@@ -4,7 +4,8 @@ The Stral Software Factory（[`SKILL.md`](SKILL.md)）の調整役から、issue
 渡された順に、issue を1件ずつ直してマージし、次の issue へ進む。1つの issue に1つの PR を立てる。
 
 同じときに、もう1つの作業役が、別の issue を別のブランチで直している。master は、作業の途中で進む。
-`README.md` の「いまの進み具合と、次にやること」節と、`docs/issues/<日付>/preliminary-investigation.json` は書かない。調整役が、実行の終わりに書く。
+書くのは、渡された issue の `docs/issues/<日付>/issue-<番号>/` だけである。
+`README.md` の「いまの進み具合と、次にやること」節と、`docs/issues/<日付>/issue-assignment-to-workers.json` は書かない。調整役が、実行の終わりに書く。
 
 計画と実行は、pstack の poteto-mode で行う。始める前に、Skill ツールで `pstack:poteto-mode` を呼ぶ。
 手順2から5は、issue に合う poteto-mode の playbook（Bug fix、Feature、Refactoring など）に従って進め、その計画を `fix-plan.adoc` に書く。
@@ -25,13 +26,48 @@ git checkout -B <ブランチ> origin/master
 
 その issue の PR が開いたまま残っていれば、ブランチを作り直さない。計画、ブランチ、PR のどこまで済んだかを見て、済んでいない最初の手順から続ける。
 
-### 2. 調べて、計画を立てる
+### 2. 事前調査を書いて、計画を立てる
 
-issue の本文とコメントを読み、関係するコードとテストを調べる。不具合の issue は、いまのコンパイラで再現する。
+issue の本文とコメントを読み、関係するコードとテストを調べる。結果を `docs/issues/<日付>/issue-<番号>/preliminary-investigation.json` に、次の形で書く。
 
-調べた結果、所有者の判断が要る issue と、1つの PR に収まらない issue は、直さずに飛ばす。渡された issue のうち、それに依存する issue も飛ばす。
+```json
+{
+  "number": 171,
+  "title": "issue の題",
+  "base_commit": "調べたときの origin/master の SHA",
+  "summary": "issue が求めていること",
+  "depends_on": [],
+  "status": "next",
+  "reason": "この status にした理由",
+  "current_behavior": "いまの振る舞いと、それを確かめたコマンドと出力",
+  "how_it_works_now": "入口から、問題の起きる場所までの、コードの流れ。読んだファイルと関数を挙げる",
+  "why_it_is_this_way": [
+    {
+      "claim": "いまの形になった理由",
+      "source": "コミットの SHA、PR や issue の番号、文書のパス",
+      "kind": "quoted か inferred"
+    }
+  ],
+  "unanswered_by_the_record": ["記録を探しても分からなかったこと"],
+  "related_code": ["lib/…: 関数名"],
+  "related_tests": ["test-programs/suites/…"],
+  "affected_ci_checks": ["tools/refactoring/measure.sh の記録"],
+  "risks": []
+}
+```
 
-計画は `docs/issues/<日付>/issue-<番号>/fix-plan.adoc` に AsciiDoc で書く。節は次の通りである。
+- `status` は `next`、`skipped`、`done` のどれかである。`done` は PR を立てたことを表す。
+- 不具合の issue は、いまのコンパイラで再現してから `current_behavior` に書く。
+- `how_it_works_now` は、pstack の `how` スキルに従って調べる。この issue に関係する範囲に絞る。
+- `why_it_is_this_way` は、pstack の `why` スキルに従って調べる。コードからではなく、記録から答える。関係するコードを入れたコミットと、その PR、issue、`docs/` の文書を、`git log -S`、`git blame`、`gh api` で辿る。書いた人の言葉は `quoted`、自分の推測は `inferred` にする。
+- `how` と `why` は Skill ツールでは呼べない。poteto-mode の `SKILL.md` と同じ階層の `../how/SKILL.md` と `../why/SKILL.md` を読んで、それに従う。
+
+事前調査は、各項目が、読んだコードか、実行したコマンドか、引用元のある記録に基づいていれば終わりである。
+
+調べた結果、所有者の判断が要る issue と、1つの PR に収まらない issue は、直さずに飛ばす。直そうとしている振る舞いが、わざと選ばれたものだと `why_it_is_this_way` で分かったら、所有者の判断が要る。渡された issue のうち、それに依存する issue も飛ばす。
+飛ばす issue の事前調査は、`status` を `skipped` にして、次の issue の PR に入れる。次の PR がなければ、その中身を、終わるときの報告に書く。調整役が、記録の PR に入れる。
+
+計画は `docs/issues/<日付>/issue-<番号>/fix-plan.adoc` に AsciiDoc で書く。その issue の事前調査をもとにする。節は次の通りである。
 
 - `== 目的`: issue が求めていることと、終わりの条件。
 - `== 現状`: いまの振る舞いと、それを確かめたコマンドと出力。関係するコードとテスト。リスク。
@@ -42,13 +78,14 @@ issue の本文とコメントを読み、関係するコードとテストを�
 
 ### 3. 計画をセルフレビューする
 
-issue の本文とコメントに照らして、計画を1回見直す。見るのは次の3つである。
+issue の本文とコメントに照らして、計画を3回見直す。毎回、次の3つをすべて見る。
 
 - issue が求めることの一つ一つに、変更とテストが対応しているか。
 - 変更が届くべき呼び出し元、テスト、記録がすべて挙がっているか。
 - AGENTS.md の約束に沿っているか。
 
-計画を直し、見つけたことと直したことを、末尾の `== セルフレビュー` に書く。
+1回ごとに計画を直し、見つけたことと直したことを、末尾の `== セルフレビュー` の `=== 1回目`、`=== 2回目`、`=== 3回目` に書く。
+2回目と3回目は、前の回で直した箇所も含めて、計画を頭から読み直す。何も見つからなかった回も、そう書く。途中の回で何も見つからなくても、3回やる。
 
 ### 4. 実装する
 
@@ -79,7 +116,7 @@ gh api repos/seiei-sogen/zustral-beta/issues -f title='…' -F body=@<本文の�
 
 ### 6. PR を立てる
 
-計測値の合計を、この issue の作業記録に書く。
+この issue の事前調査の `status` を `done` にする。計測値の合計を、この issue の作業記録に書く。
 
 ```bash
 tools/refactoring/measure.sh --tree . > docs/issues/<日付>/issue-<番号>/totals.txt
@@ -154,6 +191,6 @@ git merge --no-edit origin/master
 最後に、次を調整役へ報告する。クラウド環境では、`send_message` で、依頼にあったセッションへ送る。
 
 - マージした PR と、閉じた issue。
-- 飛ばした issue と、その理由。
+- 飛ばした issue と、その理由。PR に入れられなかった事前調査があれば、その中身。
 - 新しく立てた issue。
 - 止めたなら、止めた手順と、その理由。

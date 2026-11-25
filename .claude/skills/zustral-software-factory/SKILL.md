@@ -1,6 +1,6 @@
 ---
 name: zustral-software-factory
-description: The Stral Software Factory。開いている issue を2つの作業役に分けて、並べて直す。作業役は issue を1件ずつ、調査、計画、セルフレビュー、実装、コードレビュー、PR、CI が通ったらマージ、と回して次の issue へ進む。issue をこのファクトリーで片付けるよう頼まれたときに使う。
+description: The Stral Software Factory。開いている issue を2つの作業役に分けて、並べて直す。作業役は issue を1件ずつ、調査、計画、セルフレビュー、実装、コードレビュー、PR、CI が通ったらマージ、と回して次の issue へ進む。引数がなければ、README の「次にやること」から issue を取る。issue をこのファクトリーで片付けるよう頼まれたときに使う。
 ---
 
 # The Stral Software Factory
@@ -11,23 +11,29 @@ issue を作業役に分けて、並べて直す。作業役は2つまでであ�
 このスキルを呼ばれたセッションは、調整役である。調整役は、issue を分け、作業役を起こし、終わりに記録を書く。issue は直さない。
 作業役の手順は、[`worker-takes-each-assigned-issue-from-investigation-to-merge.md`](worker-takes-each-assigned-issue-from-investigation-to-merge.md) にある。
 
-扱う issue は、引数に番号があればその issue だけ、なければ手順1で開いていた issue のすべてである。
-途中で立てた issue は、この実行では扱わない。
+扱う issue は、引数に番号があればその issue だけである。
+引数がなければ、`README.md` の「いまの進み具合と、次にやること」節の「次にやること」から取る。手順1でこの一覧を上から読み、番号が挙がっていて、まだ開いている issue を、書かれた順に扱う。「#73 から #83」のような範囲は、その間の番号をすべて含む。issue の番号がない項目（所有者が確かめる項目など）は、扱わずに飛ばす。
+「次にやること」に開いている issue が1件も挙がっていなければ、何もせずに「終わるとき」へ進み、そう報告する。
+途中で立てた issue は、この実行では扱わない。手順3で「次にやること」に書くので、次の実行が拾う。
 
 ## 置き場
 
 ```
-docs/issues/<日付>/                     1回の実行。日付は TZ=Asia/Tokyo date +%Y%m%d
-├── preliminary-investigation.json    事前調査と、issue の分け方。調整役だけが書く
-└── issue-<番号>/                     その issue の作業役が書く
-    ├── fix-plan.adoc                 修正の計画と、そのセルフレビュー
-    └── totals.txt                    PR の木の計測値の合計（measure.sh --tree .）
+docs/issues/<日付>/                          1回の実行。日付は TZ=Asia/Tokyo date +%Y%m%d
+├── issue-assignment-to-workers.json       扱う issue と、作業役への分け方。調整役だけが書く
+└── issue-<番号>/                          その issue の作業役が書く
+    ├── preliminary-investigation.json     その issue の事前調査
+    ├── fix-plan.adoc                      修正の計画と、そのセルフレビュー
+    └── totals.txt                         PR の木の計測値の合計（measure.sh --tree .）
 ```
+
+どのファイルも、書き換える PR は1つだけにする。事前調査を issue ごとのファイルにするのも、そのためである。1つのファイルを複数の PR が書き換えると、後からマージする側が衝突する。
+`docs/issues/20261124/preliminary-investigation.json` は、実行の全体で1つの事前調査を置いていたころの記録である。そのままにする。
 
 その日のディレクトリが既にあれば、それを使う。
 途中から再開するときは、日付が変わっていても、いちばん新しい日付のディレクトリを使い、手順1からやり直す。PR が開いたままの issue は、渡された作業役が、その続きから進める。
 
-## 1. 事前調査の JSON を作り、issue を作業役に分ける
+## 1. issue を作業役に分ける
 
 最新の `origin/master` から、記録のためのブランチを作る。名前は、セッションに指定されたブランチがあればそれ、なければ `zustral-software-factory-record-<日付>` にする。
 
@@ -44,6 +50,10 @@ gh api 'repos/seiei-sogen/zustral-beta/issues?state=open&per_page=100&page=1' \
 ```
 
 1ページが100件で埋まっていたら、`page` を増やして次のページも取る。
+
+引数がないときは、`README.md` の「次にやること」を読み、そこに挙がった番号のうち、上のコマンドで開いていると分かったものだけを扱う。
+
+扱う issue を、`issue-assignment-to-workers.json` に次の形で書く。issue の中身の調べは、作業役が手順2で、issue ごとの事前調査に書く。ここでは、分けるのに要るだけ調べる。
 
 ```json
 {
@@ -69,18 +79,18 @@ gh api 'repos/seiei-sogen/zustral-beta/issues?state=open&per_page=100&page=1' \
 - `assigned_to_worker` は 1 か 2 で、`queued` の issue にだけ書く。
   - 依存でつながる issue は、同じ作業役に渡す。`related_code` が重なる issue も、同じ作業役に渡す。2つの作業役が同じファイルを書くと、後からマージする側が衝突するからである。
   - 残りは、2つの作業役の件数がそろうように分ける。
-  - `issues` には、作業役が片付ける順に並べる。依存される issue を先に、小さい issue を先にする。
+  - `issues` には、作業役が片付ける順に並べる。引数がないときは、「次にやること」の順にする。ただし、依存される issue が後ろにあれば、それを先にする。引数があるときは、依存される issue を先に、小さい issue を先にする。
   - `queued` の issue がすべて1つの作業役に集まるなら、作業役は1つにする。
 
 `queued` の issue が1件もなければ、何も push せずに、「終わるとき」へ進む。
 
-JSON を日本語でコミットして push する。クラウド環境のコンテナは、作業役を待つあいだに回収されることがあるからである。
+`issue-assignment-to-workers.json` を日本語でコミットして push する。クラウド環境のコンテナは、作業役を待つあいだに回収されることがあるからである。
 
 ```bash
 git push --force-with-lease -u origin <ブランチ>
 ```
 
-この手順は、扱う issue のすべてに `status` と `reason` があり、`queued` の issue のすべてに `assigned_to_worker` があれば終わりである。
+この手順は、`issue-assignment-to-workers.json` の扱う issue のすべてに `status` と `reason` があり、`queued` の issue のすべてに `assigned_to_worker` があれば終わりである。
 
 ## 2. 作業役を起こして、報告を待つ
 
@@ -113,11 +123,12 @@ git merge --no-edit origin/master
 
 次の2つを書き直す。
 
-- JSON。マージされた issue の `status` を `done` にする。片付かなかった issue は、`reason` に作業役の報告を書く。
+- `issue-assignment-to-workers.json`。マージされた issue の `status` を `done` にする。片付かなかった issue と、作業役が飛ばした issue は、`status` を直し、`reason` に作業役の報告を書く。
+- 作業役が、PR に入れられなかった事前調査を報告に書いてきたら、それを `issue-<番号>/preliminary-investigation.json` に書く。
 - `README.md` の「いまの進み具合と、次にやること」節。いまの書き方に合わせて、次のように直す。
   - 冒頭の「… の時点の状態である」の日付を、今日にする。
   - 「終わったこと」には、この実行の項目を1つ置き、`docs/issues/<日付>/` にリンクする。直した issue は、その項目に書き足す。
-  - 「次にやること」から、直した issue を消す。JSON に残る issue、`skipped` のうち判断が要る issue、作業役が立てた issue を、進める順に書く。
+  - 「次にやること」から、直した issue を消す。`issue-assignment-to-workers.json` に残る issue、`skipped` のうち判断が要る issue、作業役が立てた issue を、進める順に書く。
 
 日本語でコミットして `git push` し、PR を立て、CI が通ったらマージする。PR の立て方、CI の待ち方、マージのしかたは、作業役の手順6と7と同じである。この PR は issue を閉じないので、本文に `Closes` は書かない。
 

@@ -33,7 +33,7 @@ CI（`.github/workflows/build-and-test.yml`）は、これ以外にも `tools/re
 - `tools/coding-agent-setup/`: Claude Code のプラグインとスキルを入れるスクリプト。クラウド環境のセットアップスクリプトから呼ぶ。
 - `.claude/skills/cc-init-plugin-install/`: 上のスクリプトを実行するスキル。`/cc-init-plugin-install` で呼ぶ。
 - `.claude/skills/zustral-software-factory/`: The Stral Software Factory。issue を2つの作業役に分けて並べ、1件ずつ PR にして、CI が通ったらマージまで回すスキル。調整役の手順が `SKILL.md`、作業役の手順が `worker-takes-each-assigned-issue-from-investigation-to-merge.md` である。`/zustral-software-factory` で呼ぶ。
-- `docs/issues/`: The Stral Software Factory の作業記録。日付ごとの事前調査（JSON）と、issue ごとの修正計画（AsciiDoc）と、PR の木の計測値の合計（`totals.txt`）を置く。
+- `docs/issues/`: The Stral Software Factory の作業記録。日付ごとのディレクトリに、調整役が書く issue の分け方（JSON）を置く。その下の issue ごとのディレクトリに、事前調査（JSON）と、修正計画（AsciiDoc）と、PR の木の計測値の合計（`totals.txt`）を置く。
 
 ## 設計の考え方
 
