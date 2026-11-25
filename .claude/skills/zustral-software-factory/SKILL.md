@@ -121,7 +121,7 @@ git fetch origin master
 git merge --no-edit origin/master
 ```
 
-次の2つを書き直す。
+次を書き直す。
 
 - `issue-assignment-to-workers.json`。マージされた issue の `status` を `done` にする。片付かなかった issue と、作業役が飛ばした issue は、`status` を直し、`reason` に作業役の報告を書く。
 - 作業役が、PR に入れられなかった事前調査を報告に書いてきたら、それを `issue-<番号>/preliminary-investigation.json` に書く。
